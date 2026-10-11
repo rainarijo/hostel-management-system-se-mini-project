@@ -1,136 +1,88 @@
 # Hostel Management System (HMS)
 
-A Software Engineering mini-project by Group 3, Department of Computer Science and Engineering, PES University, Bengaluru.
+SE Mini-Project, Group 3, PES University (Dept. of CSE).
+Raina Kareem (PES1UG24CS361), Prema P Kotur (PES1UG24CS343), Praakruthi PS (PES1UG24CS324), Ojas Taori (PES1UG24CS308).
 
-## Overview
+A Django web application to manage hostel room allocation and student details.
+Requirements are in [`docs/SRS_Hostel_Management_System.pdf`](docs/SRS_Hostel_Management_System.pdf);
+requirement IDs (FR-x.y, SEC-REQ-n, ...) are referenced in the code comments.
 
-The Hostel Management System (HMS) is a proposed web-based application designed to simplify hostel administration by centralizing student information, room inventory, room applications, bed allocation, fee records, complaints, and reporting.
+## Run it on your laptop
 
-The system aims to replace manual processes involving paper forms, registers, and spreadsheets with a centralized application that provides students, wardens, and administrators with role-specific functionality and access to relevant information.
+You need **Python 3.12**, **Git** and **VS Code** (with the Python extension).
 
-## Objectives
+```bash
+git clone <repo-url>
+cd hostel-management-system
 
-- Simplify student registration and profile management.
-- Manage hostels, rooms, room applications, and bed allocation.
-- Prevent duplicate bed allocations through database constraints and transaction management.
-- Support room changes, student check-out, and allocation history.
-- Track hostel fees, payment records, and receipts.
-- Manage complaints and maintenance requests.
-- Provide dashboards, reports, and data exports.
-- Support notifications and hostel announcements.
-- Protect student information through role-based access control, validation, and auditing.
+python -m venv .venv
+# Windows:      .venv\Scripts\activate
+# macOS/Linux:  source .venv/bin/activate
 
-## Functional Modules
+pip install -r requirements.txt
+cp .env.example .env            # Windows: copy .env.example .env
 
-The system is organized into eight primary modules and shared services.
+python manage.py migrate
+python manage.py seed_data      # sample hostels, rooms, users
+python manage.py runserver
+```
 
-| Module | Description |
+Open http://127.0.0.1:8000 and log in. Every sample account uses the password `Hostel2026pass`:
+
+| Role | E-mail |
 |---|---|
-| Authentication and Access Control | Registration, email verification, login, password reset, session management, and role-based permissions. |
-| Student Profile Management | Student profiles, personal and academic information, master-list import, and student search. |
-| Hostel and Room Management | Hostel configuration, room inventory, capacity, room status, and vacancy information. |
-| Room Application and Allocation | Application windows, room preferences, manual and automatic allocation, and allocation history. |
-| Complaints and Maintenance | Complaint submission, status tracking, remarks, and maintenance follow-up. |
-| Fee Management | Fee records, payment recording, outstanding dues, and PDF receipts. |
-| Reports and Dashboard | Occupancy, resident lists, fee dues, complaint summaries, and CSV/PDF exports. |
-| Notifications and Announcements | Email notifications, delivery retries, and hostel announcements. |
+| Administrator | admin@hms.local |
+| Warden (boys' block) | warden.boys@hms.local |
+| Warden (girls' block) | warden.girls@hms.local |
+| Students | student1@hms.local ... student6@hms.local |
 
-Shared services provide common functionality such as permission checks, hostel-level access restrictions, audit logging, validation, error handling, and document numbering.
+The developer data browser is at http://127.0.0.1:8000/django-admin/ (log in as admin).
+It is for checking data while developing, not the Administrator screens we build.
 
-## User Roles
+The default database is SQLite (zero setup). To use PostgreSQL 16, as the SRS requires for
+deployment, set `DB_ENGINE=postgres` and the `DB_*` values in `.env`.
 
-- **Student:** Manage profiles, apply for rooms, view application and allocation status, check dues, request room changes, raise complaints, and view announcements.
-- **Warden:** Manage applications and allocations for assigned hostels, access resident information, handle complaints, and perform relevant hostel operations.
-- **Administrator:** Manage users, hostels, rooms, application windows, student master-list imports, and administrative records and reports.
+## Project layout
 
-## System Architecture
+```
+hms/                 project settings and root URLs
+apps/
+  core/              dashboards, role_required decorator, audit log, seed_data command
+  accounts/          C1  login, lock-out, roles, registration           FR-1.x
+  students/          C2  student profiles, master list, search         FR-2.x
+  rooms/             C3  hostels, rooms, occupancy                     FR-3.x
+  allocation/        C4  application window, applications, allocation, room change   FR-4.x, FR-5.x
+  complaints/        C5  complaints                                     FR-6.x
+  fees/              C6  fee records, payments, receipts               FR-7.x
+  reports/           C7  reports and exports                            FR-8.x
+  notifications/     C8  e-mail log, announcements                      FR-9.x
+templates/           HTML templates (base layout, dashboards, per-app folders)
+static/              CSS and Bootstrap (served locally)
+docs/                SRS and other project documents
+```
 
-The proposed system follows a **three-tier architecture implemented as a modular Django monolith**.
+Each app has `models.py`, `views.py`, `urls.py`, `admin.py` and a `tests/` folder.
+Screens not built yet show a "coming soon" page that names the FRs and planned sprint.
 
-1. **Presentation Layer:** Browser-based, responsive user interface built using Django Templates and Bootstrap.
-2. **Application Layer:** A Django application organized into eight functional modules and shared Core services.
-3. **Data Layer:** PostgreSQL database accessed through the Django ORM.
+### Rules already in place
 
-The architecture emphasizes modularity, data integrity, security, maintainability, and reliable room allocation. Components communicate through service interfaces, and each component is responsible for its own data.
+- Custom user model with roles (`apps/accounts/models.py`). Protect views with
+  `@role_required(Role.WARDEN, Role.ADMIN)` from `apps/core/permissions.py`.
+- Record data changes with `log_action(...)` from `apps/core/audit.py` (SEC-REQ-8).
+- Double allocation is blocked by database constraints on `Allocation` (FR-4.6).
+- Lock-out after 5 failed logins, 30-minute session timeout, password policy (FR-1.5, FR-1.7, SEC-REQ-2).
 
-## Technology Stack
+## How we work
 
-The Software Architecture and Design specification identifies the following technologies for the planned implementation.
+- **Board**: GitHub Projects (Backlog, Sprint, In progress, Review, Done). One issue per user story,
+  labelled with its FR IDs and sprint.
+- **Branches**: never commit straight to `main`. Create a branch per issue, e.g. `feature/12-apply-for-room`.
+- **Pull requests**: open a PR into `main`, link the issue (`Closes #12`), and get one teammate's approval.
+  CI (`.github/workflows/ci.yml`) must pass: flake8, migration check, and tests on PostgreSQL.
+- **Tests**: name test methods after Test Plan IDs, e.g. `test_tc10_same_bed_cannot_be_allocated_twice`.
 
-| Area | Technology |
-|---|---|
-| Programming Language | Python 3.12 |
-| Backend Framework | Django 5.x |
-| Frontend | Django Templates, Bootstrap 5.3 |
-| Database | PostgreSQL 16 |
-| Database Access | Django ORM, psycopg 3 |
-| Application Server | Gunicorn |
-| Web Server / Reverse Proxy | Nginx |
-| Operating System | Ubuntu Server 24.04 LTS |
-| PDF Generation | ReportLab |
-| Email | University SMTP relay |
-| Version Control | Git and GitHub |
-
-The implementation is intended to use free and open-source libraries and follow the constraints documented in the SRS and SAD.
-
-## Security and Quality Considerations
-
-The system design addresses:
-
-- Role-based access control and hostel-scoped authorization.
-- Secure authentication, password storage, session management, and request validation.
-- Prevention of duplicate or conflicting room allocations.
-- Protection of student data and appropriate audit logging.
-- Secure file uploads and restricted access to stored documents.
-- Performance, availability, reliability, backup, and recovery requirements.
-- Responsive usability and browser compatibility.
-- Traceability between requirements, design decisions, and testing.
-
-## Project Documentation
-
-This repository contains the primary documentation for the Hostel Management System.
-
-### 1. Software Requirements Specification (SRS)
-
-**File:** [`SRS_Hostel_Management_System.pdf`](SRS_Hostel_Management_System.pdf)
-
-Defines the system's scope, functional and non-functional requirements, user roles, external interfaces, business rules, security requirements, and requirement traceability.
-
-### 2. Software Architecture and Design (SAD)
-
-**File:** [`SAD_Architecture_and_Design.pdf`](SAD_Architecture_and_Design.pdf)
-
-Describes the system architecture, component interactions, deployment view, technology stack, data design, state models, UML sequence diagrams, API design, error handling, logging, monitoring, and user-interface design.
-
-### 3. Software Test Plan (STP)
-
-**File:** [`STP_Hostel_Management_System.pdf`](STP_Hostel_Management_System.pdf)
-
-Defines the testing scope, test strategy, test environment, test schedule, roles and responsibilities, risks, acceptance criteria, and requirements-based testing approach.
-
-## Scope Limitations
-
-The following features are outside the scope of Release 1.0:
-
-- Online fee collection through payment gateways.
-- Mess and menu management.
-- Visitor and leave/out-pass management.
-- Biometric attendance.
-- A native mobile application.
-
-The system records payments made through existing university channels; it does not directly collect payments.
-
-## Development Status
-
-This repository currently contains the project's requirements, architecture and design, and testing documentation. These documents establish the baseline for the planned implementation and verification of the Hostel Management System.
-
-## Contributors
-
-**Group 3 — PES University, Department of Computer Science and Engineering**
-
-- Raina Kareem
-- Prema P Kotur
-- Praakruthi PS
-- Ojas Taori
-
-
+```bash
+python manage.py test           # run all tests
+flake8                          # style check (NFR-MNT-1)
+python manage.py makemigrations # after changing any models.py, then commit the migration file
+```
