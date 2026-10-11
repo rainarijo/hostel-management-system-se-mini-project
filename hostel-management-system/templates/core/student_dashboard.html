@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">Hello, {{ profile.name|default:user.email }}</h1>
+<p class="page-lede mb-4">{% if profile %}{{ profile.srn }} &middot; {{ profile.program }}, year {{ profile.year }}{% else %}Your student profile isn't set up yet. Contact the hostel office.{% endif %}</p>
+
+{% if profile and not profile.is_complete %}
+  <div class="alert alert-warning">Complete your profile before you apply for a room. <a href="{% url 'students:index' %}">Update profile</a></div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="panel h-100">
+      <h2 class="h5">Your room</h2>
+      {% if allocation %}
+        <p class="stat-value mb-1">{{ allocation.room.hostel.name }}, room {{ allocation.room.room_no }}</p>
+        <p class="stat-label">Bed {{ allocation.bed_no }} &middot; {{ allocation.get_status_display }} since {{ allocation.start_date|date:"d-m-Y" }}</p>
+      {% elif application %}
+        <p>Application for {{ application.academic_year }}: <strong>{{ application.get_status_display }}</strong></p>
+      {% else %}
+        <p>You don't have a room yet.</p>
+        <a class="btn btn-brass" href="{% url 'allocation:index' %}">Apply for a room</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="panel h-100">
+      <h2 class="h5">Complaints</h2>
+      <p class="stat-value mb-1">{{ open_complaints }}</p>
+      <p class="stat-label">open</p>
+      <a href="{% url 'complaints:index' %}">View complaints</a>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="panel">
+      <h2 class="h5">Announcements</h2>
+      {% for a in announcements %}
+        <article class="border-top pt-2 mt-2"><h3 class="h6 mb-1">{{ a.title }}</h3><p class="mb-0">{{ a.body|linebreaksbr }}</p></article>
+      {% empty %}
+        <p class="mb-0 text-body-secondary">No announcements for your hostel.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

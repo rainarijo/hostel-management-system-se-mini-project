@@ -1,0 +1,70 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Hostel Management System{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/hms.css' %}">
+</head>
+<body class="d-flex flex-column min-vh-100">
+<nav class="navbar navbar-expand-lg navbar-dark hms-nav">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'core:home' %}">Hostel Management</a>
+    {% if user.is_authenticated %}
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+            aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="{% url 'core:home' %}">Dashboard</a></li>
+        {% if user.role == "STUDENT" %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">My profile</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:index' %}">Room application</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'fees:index' %}">Fees</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'complaints:index' %}">Complaints</a></li>
+        {% elif user.role == "WARDEN" %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">Students</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:index' %}">Applications</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'rooms:index' %}">Rooms</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'complaints:index' %}">Complaints</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'fees:index' %}">Fees</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}">Reports</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'notifications:index' %}">Announcements</a></li>
+        {% elif user.role == "ADMIN" %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'rooms:index' %}">Hostels and rooms</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">Students</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:index' %}">Applications</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}">Reports</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">Users and data</a></li>
+        {% endif %}
+      </ul>
+      <span class="navbar-text me-3 small">{{ user.get_full_name|default:user.email }} &middot; {{ user.get_role_display }}</span>
+      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+        <button class="btn btn-sm btn-outline-light" type="submit">Log out</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</nav>
+
+<main class="container py-4 flex-grow-1">
+  {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="border-top py-3">
+  <div class="container d-flex flex-wrap justify-content-between gap-2">
+    <span>Hostel office: hostel.office@university.edu &middot; Mon-Sat, 9:00-17:00</span>
+    <a href="#">Help</a>
+  </div>
+</footer>
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

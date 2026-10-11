@@ -1,0 +1,4 @@
+Django>=5.2,<5.3
+psycopg[binary]>=3.2
+Pillow>=10.4
+flake8>=7.1

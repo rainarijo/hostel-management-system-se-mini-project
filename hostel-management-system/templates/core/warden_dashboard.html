@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">Warden dashboard</h1>
+<p class="page-lede mb-4">{% for h in hostels %}{{ h.name }}{% if not forloop.last %}, {% endif %}{% empty %}No hostels assigned to you yet.{% endfor %}</p>
+<div class="row g-3">
+  <div class="col-lg-6">{% include "core/_beds.html" %}</div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="panel h-100"><div class="stat-value">{{ pending_applications }}</div>
+      <div class="stat-label mb-2">pending applications</div><a href="{% url 'allocation:index' %}">Review applications</a></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="panel h-100"><div class="stat-value">{{ overdue_complaints }}</div>
+      <div class="stat-label mb-2">complaints open over 72 hours</div><a href="{% url 'complaints:index' %}">View complaints</a></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">{{ feature }}</h1>
+<p class="page-lede">This screen isn't built yet. It covers {{ frs }}{% if sprint %} and is planned for Sprint {{ sprint }}{% endif %}.</p>
+<a class="btn btn-primary" href="{% if user.is_authenticated %}{% url 'core:home' %}{% else %}{% url 'accounts:login' %}{% endif %}">Back to {% if user.is_authenticated %}dashboard{% else %}log in{% endif %}</a>
+{% endblock %}

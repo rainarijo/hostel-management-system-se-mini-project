@@ -1,0 +1,31 @@
+/* HMS theme on top of Bootstrap 5. Ink blue for structure, brass for the one call to action. */
+:root {
+  --hms-ink: #1e3a5f;
+  --hms-ink-soft: #e7edf4;
+  --hms-brass: #a8792b;
+  --hms-paper: #f7f8fa;
+  --hms-text: #1c2430;
+  --hms-muted: #5c6878;
+  --bs-body-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --bs-body-color: var(--hms-text);
+  --bs-body-bg: var(--hms-paper);
+  --bs-link-color-rgb: 30, 58, 95;
+}
+.hms-nav { background: var(--hms-ink); }
+.hms-nav .navbar-brand { font-weight: 700; letter-spacing: .01em; }
+.hms-nav .nav-link { color: rgba(255,255,255,.78); }
+.hms-nav .nav-link:hover, .hms-nav .nav-link.active { color: #fff; }
+.btn-primary { --bs-btn-bg: var(--hms-ink); --bs-btn-border-color: var(--hms-ink);
+  --bs-btn-hover-bg: #16304f; --bs-btn-hover-border-color: #16304f; }
+.btn-brass { background: var(--hms-brass); color: #fff; border: 0; }
+.btn-brass:hover { background: #8f6522; color: #fff; }
+.page-title { font-size: 1.6rem; font-weight: 650; margin-bottom: .25rem; }
+.page-lede { color: var(--hms-muted); max-width: 60ch; }
+.panel { background: #fff; border: 1px solid #dfe4ea; border-radius: .5rem; padding: 1.25rem; }
+.stat-value { font-size: 2rem; font-weight: 700; line-height: 1.1; color: var(--hms-ink); }
+.stat-label { color: var(--hms-muted); font-size: .9rem; }
+.occupancy-bar { height: .6rem; background: var(--hms-ink-soft); border-radius: 1rem; overflow: hidden; }
+.occupancy-bar > span { display: block; height: 100%; background: var(--hms-ink); }
+.login-wrap { max-width: 400px; }
+:focus-visible { outline: 3px solid var(--hms-brass); outline-offset: 2px; }
+footer { color: var(--hms-muted); font-size: .875rem; }

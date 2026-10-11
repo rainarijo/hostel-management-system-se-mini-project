@@ -1,0 +1,11 @@
+<div class="panel">
+  <h2 class="h5">Beds</h2>
+  <div class="row text-center my-3">
+    <div class="col"><div class="stat-value">{{ beds.total }}</div><div class="stat-label">total</div></div>
+    <div class="col"><div class="stat-value">{{ beds.occupied }}</div><div class="stat-label">occupied</div></div>
+    <div class="col"><div class="stat-value">{{ beds.vacant }}</div><div class="stat-label">vacant</div></div>
+  </div>
+  <div class="occupancy-bar" role="progressbar" aria-valuenow="{{ beds.percent }}" aria-valuemin="0" aria-valuemax="100"
+       aria-label="Occupancy {{ beds.percent }} percent"><span style="width: {{ beds.percent }}%"></span></div>
+  <p class="stat-label mt-2 mb-0">{{ beds.percent }}% occupied</p>
+</div>

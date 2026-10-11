@@ -1,0 +1,8 @@
+from django.apps import AppConfig
+
+
+class AllocationConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.allocation"
+    label = "allocation"
+    verbose_name = "Applications & Allocation"

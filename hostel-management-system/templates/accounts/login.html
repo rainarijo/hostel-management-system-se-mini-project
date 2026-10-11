@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Log in · Hostel Management System{% endblock %}
+{% block content %}
+<div class="login-wrap mx-auto mt-4">
+  <h1 class="page-title">Log in</h1>
+  <p class="page-lede mb-4">Use your institutional e-mail address.</p>
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+    {% endif %}
+    <div class="mb-3">
+      <label for="id_email" class="form-label">E-mail <span aria-hidden="true">*</span></label>
+      <input type="email" name="email" id="id_email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+             value="{{ form.email.value|default:'' }}" autocomplete="email" required autofocus>
+      {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      <label for="id_password" class="form-label">Password <span aria-hidden="true">*</span></label>
+      <input type="password" name="password" id="id_password" class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+             autocomplete="current-password" required>
+      {% for e in form.password.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-brass w-100">Log in</button>
+    <div class="d-flex justify-content-between mt-3 small">
+      <a href="{% url 'accounts:register' %}">New student? Create an account</a>
+      <a href="{% url 'accounts:password_reset' %}">Forgot password</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

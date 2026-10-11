@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">Administrator dashboard</h1>
+<p class="page-lede mb-4">{{ hostel_count }} active hostel{{ hostel_count|pluralize }}, {{ room_count }} room{{ room_count|pluralize }}.</p>
+<div class="row g-3">
+  <div class="col-lg-6">{% include "core/_beds.html" %}</div>
+  <div class="col-lg-6">
+    <div class="panel h-100"><div class="stat-value">{{ pending_applications }}</div>
+      <div class="stat-label mb-2">pending applications</div>
+      <a href="{% url 'rooms:index' %}">Manage hostels and rooms</a></div>
+  </div>
+</div>
+{% endblock %}
