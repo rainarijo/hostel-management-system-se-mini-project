@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Allocation, ApplicationWindow, RoomApplication, RoomChangeRequest
+from .models import Allocation, ApplicationWindow, AutoAllocateRun, RoomApplication, RoomChangeRequest
 
 admin.site.register(ApplicationWindow)
 
@@ -18,3 +18,4 @@ class AllocationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(RoomChangeRequest)
+admin.site.register(AutoAllocateRun)

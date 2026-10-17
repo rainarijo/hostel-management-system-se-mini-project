@@ -58,6 +58,8 @@ class StudentProfile(TimeStampedModel):
     photo = models.ImageField(upload_to="photos/", blank=True)
     # BR-4: medical/disability priority, set by the Administrator only
     priority_flag = models.BooleanField(default=False)
+    # OR-3: time the student acknowledged the privacy notice at registration
+    privacy_ack_at = models.DateTimeField(null=True, blank=True)
 
     MANDATORY_FIELDS = ("mobile", "permanent_address", "guardian_name", "guardian_relationship",
                         "guardian_mobile", "blood_group")

@@ -68,3 +68,25 @@ class User(AbstractUser):
         self.first_failed_login_at = None
         self.locked_until = None
         self.save(update_fields=["failed_login_count", "first_failed_login_at", "locked_until"])
+
+
+class TokenPurpose(models.TextChoices):
+    VERIFY = "VERIFY", "E-mail verification"
+    RESET = "RESET", "Password reset"
+
+
+class AuthToken(models.Model):
+    """One-time link token (FR-1.2, FR-1.6). Only the SHA-256 hash is stored, never the raw token."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auth_tokens")
+    purpose = models.CharField(max_length=6, choices=TokenPurpose.choices)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.purpose} token for {self.user_id}"
+
+    @property
+    def is_valid(self):
+        return self.used_at is None and self.expires_at > timezone.now()

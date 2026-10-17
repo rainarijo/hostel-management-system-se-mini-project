@@ -32,3 +32,16 @@ class AuditLog(models.Model):
         if self.pk:
             raise ValueError("Audit log entries are append-only.")
         super().save(*args, **kwargs)
+
+
+class DocumentSequence(models.Model):
+    """Counter behind APP/CMP/RCP numbers. Used by apps.core.sequences.next_number."""
+    prefix = models.CharField(max_length=5)
+    year = models.PositiveSmallIntegerField()
+    last_no = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["prefix", "year"], name="uniq_document_sequence")]
+
+    def __str__(self):
+        return f"{self.prefix}-{self.year}: {self.last_no}"

@@ -46,7 +46,13 @@ class Room(TimeStampedModel):
 
     class Meta:
         ordering = ["hostel", "floor", "room_no"]
-        constraints = [models.UniqueConstraint(fields=["hostel", "room_no"], name="unique_room_no_per_hostel")]
+        constraints = [
+            models.UniqueConstraint(fields=["hostel", "room_no"], name="uniq_room_no_per_hostel"),
+            models.CheckConstraint(
+                condition=models.Q(floor__gte=0, floor__lte=20, capacity__gte=1, capacity__lte=4,
+                                   annual_fee__gte=0, annual_fee__lte=500000),
+                name="chk_room_ranges"),
+        ]
 
     def __str__(self):
         return f"{self.hostel.name} - {self.room_no}"

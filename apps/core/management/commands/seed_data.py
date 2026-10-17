@@ -79,8 +79,9 @@ class Command(BaseCommand):
         for srn, room in (("PES1UG24CS102", Room.objects.get(hostel=boys, room_no="102")),
                           ("PES1UG24CS105", Room.objects.get(hostel=girls, room_no="103"))):
             alloc = Allocation.objects.create(student=StudentProfile.objects.get(srn=srn), room=room,
-                                              bed_no=1, start_date=today)
-            FeeRecord.objects.create(allocation=alloc, total_amount=room.annual_fee)
+                                              bed_no=1, start_date=today, academic_year=f"{year}-{year + 1}")
+            FeeRecord.objects.create(allocation=alloc, total_amount=room.annual_fee,
+                                     academic_year=f"{year}-{year + 1}")
             room.refresh_status()
 
         Announcement.objects.create(hostel=boys, title="Water supply maintenance",
