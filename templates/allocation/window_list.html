@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Application windows · Hostel Management System{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+  <div>
+    <h1 class="page-title">Application windows</h1>
+    <p class="page-lede mb-0">Students can apply for a room only while a window is open (FR-4.1).</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'allocation:window_create' %}">New window</a>
+</div>
+<div class="panel">
+  {% if rows %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Application windows, newest first</caption>
+      <thead>
+        <tr><th scope="col">Academic year</th><th scope="col">Start date</th><th scope="col">End date</th>
+            <th scope="col">Status</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr>
+      </thead>
+      <tbody>
+        {% for window, status in rows %}
+        <tr>
+          <td>{{ window.academic_year }}</td>
+          <td>{{ window.start_date|date:"d-m-Y" }}</td>
+          <td>{{ window.end_date|date:"d-m-Y" }}</td>
+          <td><span class="badge {% if status == 'Open' %}text-bg-success{% elif status == 'Upcoming' %}text-bg-info{% else %}text-bg-secondary{% endif %}">{{ status }}</span></td>
+          <td class="text-end"><a href="{% url 'allocation:window_edit' window.pk %}">Edit<span class="visually-hidden"> {{ window.academic_year }}</span></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="mb-0">No application windows yet. Create one to let students apply.</p>
+  {% endif %}
+</div>
+{% endblock %}
