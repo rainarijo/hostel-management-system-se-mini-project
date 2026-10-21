@@ -18,7 +18,7 @@
         <p>Application for {{ application.academic_year }}: <strong>{{ application.get_status_display }}</strong></p>
       {% else %}
         <p>You don't have a room yet.</p>
-        <a class="btn btn-brass" href="{% url 'allocation:index' %}">Apply for a room</a>
+        <a class="btn btn-brass" href="{% url 'allocation:apply' %}">Apply for a room</a>
       {% endif %}
     </div>
   </div>

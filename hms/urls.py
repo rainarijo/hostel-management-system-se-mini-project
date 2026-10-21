@@ -6,7 +6,7 @@ urlpatterns = [
     path("accounts/", include("apps.accounts.urls")),
     path("students/", include("apps.students.urls")),
     path("rooms/", include("apps.rooms.urls")),
-    path("", include("apps.allocation.urls")),          # /allocation/ and /manage/windows/
+    path("", include("apps.allocation.urls")),          # /allocation/, /applications/, /manage/windows/
     path("complaints/", include("apps.complaints.urls")),
     path("fees/", include("apps.fees.urls")),
     path("reports/", include("apps.reports.urls")),

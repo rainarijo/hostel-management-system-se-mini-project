@@ -4,11 +4,13 @@ from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.core.audit import log_action
+from apps.core.exceptions import BusinessRuleViolation, ProfileIncomplete
 from apps.core.permissions import role_required
+from apps.rooms.models import RoomType
 
-from .forms import ApplicationWindowForm
-from .models import ApplicationWindow
-from .services import window_status
+from .forms import ApplicationForm, ApplicationWindowForm
+from .models import ApplicationWindow, RoomApplication
+from .services import get_open_window, submit_application, vacancy_by_room_type, window_status
 
 
 @role_required(Role.STUDENT, Role.WARDEN, Role.ADMIN)
@@ -56,3 +58,42 @@ def window_edit(request, pk):
         messages.success(request, f"Application window for {window.academic_year} updated.")
         return redirect("allocation:window_list")
     return render(request, "allocation/window_form.html", {"form": form, "is_new": False, "window": window})
+
+
+@role_required(Role.STUDENT)
+def apply(request):
+    """FR-4.2, FR-4.3: submit one room application for the open window."""
+    student = getattr(request.user, "student_profile", None)
+    vacancy = vacancy_by_room_type(student) if student else {}
+    form = ApplicationForm(request.POST or None, student=student, vacancy=vacancy)
+    error, status = None, 200
+    if request.method == "POST" and form.is_valid():
+        try:
+            if student is None:
+                raise ProfileIncomplete()
+            application = submit_application(student, form.preferences,
+                                             form.cleaned_data["preferred_roommate_srn"], request=request)
+        except BusinessRuleViolation as exc:
+            error, status = exc.message, 409
+        else:
+            messages.success(request, f"Application {application.application_no} submitted.")
+            return redirect("allocation:application_detail", application_no=application.application_no)
+
+    window = get_open_window()
+    existing = None
+    if window and student:
+        existing = student.applications.filter(academic_year=window.academic_year).first()
+    return render(request, "allocation/apply.html", {
+        "form": form, "window": window, "existing": existing, "error": error, "student": student,
+        "vacancy": [(label, vacancy.get(value, 0)) for value, label in RoomType.choices],
+    }, status=status)
+
+
+@role_required(Role.STUDENT)
+def application_detail(request, application_no):
+    """FR-4.3: a student can open only their own application."""
+    application = get_object_or_404(RoomApplication, application_no=application_no, student__user=request.user)
+    preferences = [getattr(application, f"get_preference_{n}_display")() for n in (1, 2, 3)
+                   if getattr(application, f"preference_{n}")]
+    return render(request, "allocation/application_detail.html",
+                  {"application": application, "preferences": preferences})

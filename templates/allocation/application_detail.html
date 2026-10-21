@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Application {{ application.application_no }} · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Application {{ application.application_no }}</h1>
+<p class="page-lede mb-4">Academic year {{ application.academic_year }}</p>
+<div class="panel">
+  <dl class="row mb-0">
+    <dt class="col-sm-4">Application number</dt><dd class="col-sm-8">{{ application.application_no }}</dd>
+    <dt class="col-sm-4">Academic year</dt><dd class="col-sm-8">{{ application.academic_year }}</dd>
+    <dt class="col-sm-4">Preferences</dt>
+    <dd class="col-sm-8"><ol class="mb-0 ps-3">{% for p in preferences %}<li>{{ p }}</li>{% endfor %}</ol></dd>
+    <dt class="col-sm-4">Preferred roommate</dt><dd class="col-sm-8">{{ application.preferred_roommate_srn|default:"None" }}</dd>
+    <dt class="col-sm-4">Status</dt><dd class="col-sm-8">{{ application.get_status_display }}</dd>
+    {% if application.rejection_reason %}
+      <dt class="col-sm-4">Reason</dt><dd class="col-sm-8">{{ application.rejection_reason }}</dd>
+    {% endif %}
+    <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">{{ application.submitted_at|date:"d-m-Y" }}</dd>
+  </dl>
+</div>
+<a class="btn btn-outline-secondary mt-3" href="{% url 'core:home' %}">Back to dashboard</a>
+{% endblock %}
