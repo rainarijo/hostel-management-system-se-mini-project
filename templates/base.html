@@ -21,7 +21,7 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'core:home' %}">Dashboard</a></li>
         {% if user.role == "STUDENT" %}
           <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">My profile</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:index' %}">Room application</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:apply' %}">Room application</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'fees:index' %}">Fees</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'complaints:index' %}">Complaints</a></li>
         {% elif user.role == "WARDEN" %}

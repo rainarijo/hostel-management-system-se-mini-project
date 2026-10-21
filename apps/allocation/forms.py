@@ -2,6 +2,9 @@ import re
 
 from django import forms
 
+from apps.rooms.models import RoomType
+from apps.students.models import MasterStudent
+
 from .models import ApplicationWindow
 
 YEAR_PATTERN = re.compile(r"^(\d{4})-(\d{4})$")
@@ -43,3 +46,59 @@ class ApplicationWindowForm(forms.ModelForm):
         if start and end and end < start:
             self.add_error("end_date", "End date cannot be before the start date.")
         return cleaned
+
+
+class ApplicationForm(forms.Form):
+    """FR-4.2: up to three distinct room-type preferences in priority order, optional roommate SRN."""
+    preference_1 = forms.ChoiceField(label="First preference")
+    preference_2 = forms.ChoiceField(label="Second preference", required=False)
+    preference_3 = forms.ChoiceField(label="Third preference", required=False)
+    preferred_roommate_srn = forms.CharField(label="Preferred roommate SRN", max_length=13, required=False,
+                                             help_text="Optional, for example PES1UG24CS001.")
+
+    PREFERENCE_FIELDS = ("preference_1", "preference_2", "preference_3")
+
+    def __init__(self, *args, student=None, vacancy=None, **kwargs):
+        self.student = student
+        super().__init__(*args, **kwargs)
+        vacancy = vacancy or {}
+        choices = [(value, f"{label} ({vacancy[value]} vacant bed{'s' if vacancy[value] != 1 else ''})"
+                    if value in vacancy else label) for value, label in RoomType.choices]
+        for name in self.PREFERENCE_FIELDS:
+            empty = "Select a room type" if name == "preference_1" else "No preference"
+            self.fields[name].choices = [("", empty)] + choices
+            self.fields[name].widget.attrs["class"] = "form-select"
+        self.fields["preferred_roommate_srn"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "PES1UG24CS001", "aria-describedby": "roommate_help"})
+
+    def full_clean(self):
+        super().full_clean()
+        for name in self.errors:
+            if name in self.fields:
+                self.fields[name].widget.attrs["class"] += " is-invalid"
+
+    def clean_preferred_roommate_srn(self):
+        srn = self.cleaned_data["preferred_roommate_srn"].strip().upper()
+        if not srn:
+            return ""
+        if self.student is not None and srn == self.student.srn.upper():
+            raise forms.ValidationError("Enter another student's SRN, not your own.")
+        if not MasterStudent.objects.filter(srn__iexact=srn).exists():
+            raise forms.ValidationError("No student with this SRN was found.")
+        return srn
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("preference_3") and not cleaned.get("preference_2"):
+            self.add_error("preference_2", "Choose a second preference before a third.")
+        seen = set()
+        for name in self.PREFERENCE_FIELDS:
+            value = cleaned.get(name)
+            if value and value in seen:
+                self.add_error(name, "Each preference must be a different room type.")
+            seen.add(value)
+        return cleaned
+
+    @property
+    def preferences(self):
+        return [self.cleaned_data[n] for n in self.PREFERENCE_FIELDS if self.cleaned_data.get(n)]
