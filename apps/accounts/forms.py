@@ -1,11 +1,11 @@
 from django import forms
+from .models import Role, User
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
 from apps.core.audit import log_action
 from apps.students.models import MasterStudent, StudentProfile
 
-from .models import User
 GENERIC_ERROR = "Invalid e-mail or password."   # FR-1.3: same message for unknown e-mail and wrong password
 
 
@@ -82,6 +82,49 @@ class RegistrationForm(forms.Form):
         cleaned["email"] = master.email.lower()
         self.master_student = master
         return cleaned
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords do not match.")
+
+        if password2:
+            validate_password(password2)
+
+        return password2
+
+
+class AdminAccountCreateForm(forms.Form):
+    email = forms.EmailField(label="Email")
+    first_name = forms.CharField(max_length=150, label="First name")
+    last_name = forms.CharField(
+        max_length=150,
+        label="Last name",
+        required=False,
+    )
+    role = forms.ChoiceField(
+        choices=[
+            (Role.WARDEN, "Warden"),
+            (Role.ADMIN, "Administrator"),
+        ],
+        label="Role",
+    )
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput,
+    )
+    password2 = forms.CharField(
+        label="Confirm password",
+        widget=forms.PasswordInput,
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
