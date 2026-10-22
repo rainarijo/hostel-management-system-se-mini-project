@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Complaints - Hostel Management{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Complaints</h1>
+
+{% if has_allocation %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h2 class="h5 card-title">Raise a complaint</h2>
+    {% if form.errors %}
+    <div class="alert alert-danger" role="alert">Please correct the errors below.</div>
+    {% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="{{ form.category.id_for_label }}" class="form-label">Category <span class="text-danger" aria-hidden="true">*</span></label>
+        {{ form.category }}
+        {% for error in form.category.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="mb-3">
+        <label for="{{ form.description.id_for_label }}" class="form-label">Description <span class="text-danger" aria-hidden="true">*</span></label>
+        {{ form.description }}
+        <div class="form-text">{{ form.description.help_text }}</div>
+        {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary">Submit complaint</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info" role="alert">
+  You can raise a complaint once you have an active room allocation.
+</div>
+{% endif %}
+
+<h2 class="h5">My complaints</h2>
+{% if complaints %}
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr><th scope="col">ID</th><th scope="col">Raised on</th><th scope="col">Hostel / room</th>
+          <th scope="col">Category</th><th scope="col">Description</th><th scope="col">Status</th></tr>
+    </thead>
+    <tbody>
+    {% for c in complaints %}
+      <tr>
+        <td>{{ c.complaint_no }}</td>
+        <td>{{ c.created_at|date:"d-m-Y" }}</td>
+        <td>{{ c.room.hostel.name }} / {{ c.room.room_no }}</td>
+        <td>{{ c.get_category_display }}</td>
+        <td>{{ c.description }}</td>
+        <td>{{ c.get_status_display }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">You have not raised any complaints.</p>
+{% endif %}
+{% endblock %}
