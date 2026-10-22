@@ -11,9 +11,13 @@ from django.db import transaction
 from apps.accounts.models import Role, User
 from apps.allocation.models import Allocation, ApplicationWindow
 from apps.fees.models import FeeRecord
+from apps.fees.services import create_fee_record
 from apps.notifications.models import Announcement
 from apps.rooms.models import Hostel, Room, RoomType
 from apps.students.models import MasterStudent, StudentProfile
+from apps.complaints.models import Complaint
+from apps.fees.models import FeeRecord, Payment
+from apps.fees.services import create_fee_record
 
 PASSWORD = "Hostel2026pass"
 
@@ -36,8 +40,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Sample data already loaded. Use --reset to reload."))
             return
         if opts["reset"]:
-            for model in (FeeRecord, Allocation, Announcement, ApplicationWindow, Room, Hostel,
-                          StudentProfile, MasterStudent):
+            for model in (Payment, Complaint, FeeRecord, Allocation, Announcement, ApplicationWindow, Room,
+                          Hostel, StudentProfile, MasterStudent):
                 model.objects.all().delete()
             User.objects.filter(email__endswith="@hms.local").delete()
 
@@ -80,8 +84,7 @@ class Command(BaseCommand):
                           ("PES1UG24CS105", Room.objects.get(hostel=girls, room_no="103"))):
             alloc = Allocation.objects.create(student=StudentProfile.objects.get(srn=srn), room=room,
                                               bed_no=1, start_date=today, academic_year=f"{year}-{year + 1}")
-            FeeRecord.objects.create(allocation=alloc, total_amount=room.annual_fee,
-                                     academic_year=f"{year}-{year + 1}")
+            create_fee_record(alloc)   # also created by the fees signal; safe to call twice
             room.refresh_status()
 
         Announcement.objects.create(hostel=boys, title="Water supply maintenance",
