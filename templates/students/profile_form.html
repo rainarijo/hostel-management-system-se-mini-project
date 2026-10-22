@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Edit Student Profile{% endblock %}
+{% block content %}
+<h1 class="page-title">Edit Student Profile</h1>
+
+<form method="post" enctype="multipart/form-data" class="panel p-4">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-primary" type="submit">Save changes</button>
+  <a class="btn btn-outline-secondary"
+     href="{% url 'students:profile_detail' profile.pk %}">Cancel</a>
+</form>
+{% endblock %}
