@@ -71,7 +71,7 @@ class StudentProfileTests(TestCase):
             {
                 "mobile": "9876543210",
                 "personal_email": "personal@example.com",
-                "permanent_address": "Bengaluru",
+                "permanent_address": "Bengaluru, Karnataka",
                 "guardian_name": "Parent One",
                 "guardian_relationship": "Parent",
                 "guardian_mobile": "9876543211",
@@ -80,7 +80,7 @@ class StudentProfileTests(TestCase):
                 "blood_group": "A+",
             },
         )
-
+     
         self.assertRedirects(
             response,
             reverse("students:profile_detail", args=[self.profile.pk]),
@@ -88,9 +88,10 @@ class StudentProfileTests(TestCase):
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.mobile, "9876543210")
         self.assertEqual(self.profile.personal_email, "personal@example.com")
-        self.assertEqual(self.profile.permanent_address, "Bengaluru")
+        self.assertEqual(self.profile.permanent_address, "Bengaluru, Karnataka")
         self.assertEqual(self.profile.guardian_name, "Parent One")
         self.assertEqual(self.profile.blood_group, "A+")
+        
 
     def test_student_cannot_edit_another_students_profile(self):
         self.client.force_login(self.student)
@@ -113,6 +114,14 @@ class StudentProfileTests(TestCase):
                 "program": "ECE",
                 "year": 4,
                 "mobile": "9876543210",
+                "personal_email": "student@example.com",
+                "permanent_address": "Bengaluru, Karnataka",
+                "guardian_name": "Parent One",
+                "guardian_relationship": "Parent",
+                "guardian_mobile": "9876543211",
+                "emergency_contact_name": "Contact One",
+                "emergency_contact_mobile": "9876543212",
+                "blood_group": "A+",
             },
         )
 
@@ -138,7 +147,15 @@ class StudentProfileTests(TestCase):
                 "program": "CSE",
                 "year": 3,
                 "mobile": "9876543210",
-            },
+                "personal_email": "student@example.com",
+                "permanent_address": "Bengaluru, Karnataka",
+                "guardian_name": "Parent One",
+                "guardian_relationship": "Parent",
+                "guardian_mobile": "9876543211",
+                "emergency_contact_name": "Contact One",
+                "emergency_contact_mobile": "9876543212",
+                "blood_group": "A+",
+            }
         )
 
         self.assertRedirects(
@@ -211,7 +228,7 @@ class StudentProfileTests(TestCase):
             {
                 "mobile": "9876543210",
                 "personal_email": "",
-                "permanent_address": "Bengaluru",
+                "permanent_address": "Bengaluru, Karnataka",
                 "guardian_name": "Parent One",
                 "guardian_relationship": "Parent",
                 "guardian_mobile": "9876543211",
