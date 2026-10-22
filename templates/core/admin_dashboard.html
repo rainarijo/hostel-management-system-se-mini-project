@@ -7,6 +7,7 @@
   <div class="col-lg-6">
     <div class="panel h-100"><div class="stat-value">{{ pending_applications }}</div>
       <div class="stat-label mb-2">pending applications</div>
+      <a href="{% url 'allocation:queue' %}">Review applications</a> &middot;
       <a href="{% url 'rooms:index' %}">Manage hostels and rooms</a></div>
   </div>
 </div>

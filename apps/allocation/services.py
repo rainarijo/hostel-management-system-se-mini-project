@@ -1,14 +1,19 @@
 """Allocation business logic (SAD 4.4). Views call these; they raise apps.core.exceptions on rule violations."""
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils import timezone
 
+from apps.accounts.models import Role
 from apps.core.audit import log_action
-from apps.core.exceptions import DuplicateApplication, ProfileIncomplete, ValidationFailure, WindowClosed
+from apps.core.exceptions import (AccessDenied, DuplicateApplication, ProfileIncomplete, ValidationFailure,
+                                  WindowClosed)
 from apps.core.sequences import next_number
 from apps.rooms.models import Room, RoomStatus, RoomType
 
-from .models import ACTIVE_STATUSES, ApplicationWindow, RoomApplication
+from .models import ACTIVE_STATUSES, ApplicationStatus, ApplicationWindow, RoomApplication
+
+# FR-4.4 priority groups, lowest number first in the queue.
+GROUP_YEAR_1, GROUP_PRIORITY, GROUP_STANDARD = 0, 1, 2
 
 
 def get_open_window(today=None):
@@ -72,3 +77,29 @@ def vacancy_by_room_type(student):
     for room in rooms:
         vacancy[room.room_type] += max(room.capacity - room.occupied, 0)
     return vacancy
+
+
+def list_pending(actor, year=None, preference=None):
+    """FR-4.4: pending applications by priority group, then oldest first.
+
+    SAD DD-1: a Warden sees a student only if the student's gender matches one of the Warden's hostels.
+    """
+    if actor.role == Role.ADMIN:
+        qs = RoomApplication.objects.all()
+    elif actor.role == Role.WARDEN:
+        genders = actor.hostels.filter(is_active=True).values("gender_type")
+        qs = RoomApplication.objects.filter(student__gender__in=genders)
+    else:
+        raise AccessDenied()
+
+    qs = qs.filter(status=ApplicationStatus.PENDING)
+    if year:
+        qs = qs.filter(student__year=year)
+    if preference:
+        qs = qs.filter(Q(preference_1=preference) | Q(preference_2=preference) | Q(preference_3=preference))
+    return (qs.select_related("student")
+            .annotate(priority_group=Case(
+                When(student__year=1, then=Value(GROUP_YEAR_1)),
+                When(student__priority_flag=True, then=Value(GROUP_PRIORITY)),
+                default=Value(GROUP_STANDARD), output_field=IntegerField()))
+            .order_by("priority_group", "submitted_at", "pk"))

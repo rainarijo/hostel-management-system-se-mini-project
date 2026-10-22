@@ -6,7 +6,7 @@
   <div class="col-lg-6">{% include "core/_beds.html" %}</div>
   <div class="col-sm-6 col-lg-3">
     <div class="panel h-100"><div class="stat-value">{{ pending_applications }}</div>
-      <div class="stat-label mb-2">pending applications</div><a href="{% url 'allocation:index' %}">Review applications</a></div>
+      <div class="stat-label mb-2">pending applications</div><a href="{% url 'allocation:queue' %}">Review applications</a></div>
   </div>
   <div class="col-sm-6 col-lg-3">
     <div class="panel h-100"><div class="stat-value">{{ overdue_complaints }}</div>
