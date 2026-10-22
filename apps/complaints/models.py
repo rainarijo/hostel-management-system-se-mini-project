@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from apps.core.models import TimeStampedModel
 from apps.rooms.models import Room
@@ -39,10 +39,18 @@ class Complaint(TimeStampedModel):
     def __str__(self):
         return self.complaint_no or "New complaint"
 
+    @property
+    def hostel(self):
+        """FR-6.2: the hostel is taken from the room, so it cannot disagree with it."""
+        return self.room.hostel
+
     def save(self, *args, **kwargs):
         if not self.complaint_no:
-            from django.utils import timezone
-            year = timezone.now().year
-            count = Complaint.objects.filter(complaint_no__startswith=f"CMP-{year}-").count() + 1
-            self.complaint_no = f"CMP-{year}-{count:05d}"
+            # Gap-free number from DocumentSequence (SAD 4.1.2, ADR-8). The number and the row are saved
+            # in one transaction, so a failed save does not use up a number.
+            from apps.core.sequences import next_number
+            with transaction.atomic():
+                self.complaint_no = next_number("CMP")
+                super().save(*args, **kwargs)
+            return
         super().save(*args, **kwargs)
