@@ -10,14 +10,12 @@ from django.db import transaction
 
 from apps.accounts.models import Role, User
 from apps.allocation.models import Allocation, ApplicationWindow
-from apps.fees.models import FeeRecord
+from apps.complaints.models import Complaint
+from apps.fees.models import FeeRecord, Payment
 from apps.fees.services import create_fee_record
 from apps.notifications.models import Announcement
 from apps.rooms.models import Hostel, Room, RoomType
 from apps.students.models import MasterStudent, StudentProfile
-from apps.complaints.models import Complaint
-from apps.fees.models import FeeRecord, Payment
-from apps.fees.services import create_fee_record
 
 PASSWORD = "Hostel2026pass"
 
