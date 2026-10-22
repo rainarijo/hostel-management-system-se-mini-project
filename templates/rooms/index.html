@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Hostels and rooms · Hostel Management System{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+  <div>
+    <h1 class="page-title">Hostels and rooms</h1>
+    <p class="page-lede mb-0">Manage hostel assignments and room configuration.</p>
+  </div>
+  {% if user.role == "ADMIN" %}
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-primary" href="{% url 'rooms:hostel_create' %}">New hostel</a>
+    <a class="btn btn-primary" href="{% url 'rooms:room_create' %}">New room</a>
+  </div>
+  {% endif %}
+</div>
+
+<section class="panel mb-4" aria-labelledby="hostels-heading">
+  <h2 class="h5" id="hostels-heading">Hostels</h2>
+  {% if hostels %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Hostel configuration</caption>
+      <thead>
+        <tr><th scope="col">Name</th><th scope="col">Gender</th><th scope="col">Wardens</th>
+            <th scope="col">Status</th>{% if user.role == "ADMIN" %}<th scope="col"><span class="visually-hidden">Actions</span></th>{% endif %}</tr>
+      </thead>
+      <tbody>
+        {% for hostel in hostels %}
+        <tr>
+          <td>{{ hostel.name }}</td>
+          <td>{{ hostel.get_gender_type_display }}</td>
+          <td>{% for warden in hostel.wardens.all %}{{ warden.get_full_name|default:warden.email }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="text-body-secondary">No Wardens assigned</span>{% endfor %}</td>
+          <td><span class="badge {% if hostel.is_active %}text-bg-success{% else %}text-bg-secondary{% endif %}">{% if hostel.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+          {% if user.role == "ADMIN" %}
+          <td class="text-end text-nowrap">
+            <a href="{% url 'rooms:hostel_edit' hostel.pk %}">Edit<span class="visually-hidden"> {{ hostel.name }}</span></a>
+            {% if hostel.is_active %}
+            <form method="post" action="{% url 'rooms:hostel_deactivate' hostel.pk %}" class="d-inline ms-2">
+              {% csrf_token %}
+              <button class="btn btn-link p-0 align-baseline text-danger" type="submit"
+                      onclick="return confirm('Deactivate {{ hostel.name|escapejs }}?')">Deactivate<span class="visually-hidden"> {{ hostel.name }}</span></button>
+            </form>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="mb-0">No hostels are available{% if user.role == "ADMIN" %}. Create a hostel to get started{% else %} for your account{% endif %}.</p>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="rooms-heading">
+  <h2 class="h5" id="rooms-heading">Rooms</h2>
+  {% if rooms %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Room configuration</caption>
+      <thead>
+        <tr><th scope="col">Hostel</th><th scope="col">Room</th><th scope="col">Floor</th>
+            <th scope="col">Type</th><th scope="col">Capacity</th><th scope="col">Annual fee</th>
+            <th scope="col">Status</th>{% if user.role == "ADMIN" %}<th scope="col"><span class="visually-hidden">Actions</span></th>{% endif %}</tr>
+      </thead>
+      <tbody>
+        {% for room in rooms %}
+        <tr>
+          <td>{{ room.hostel.name }}</td>
+          <td>{{ room.room_no }}</td>
+          <td>{{ room.floor }}</td>
+          <td>{{ room.get_room_type_display }}</td>
+          <td>{{ room.capacity }}</td>
+          <td>INR {{ room.annual_fee|floatformat:2 }}</td>
+          <td>{{ room.get_status_display }}</td>
+          {% if user.role == "ADMIN" %}<td class="text-end"><a href="{% url 'rooms:room_edit' room.pk %}">Edit<span class="visually-hidden"> room {{ room.room_no }}</span></a></td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="mb-0">No rooms are configured{% if user.role == "ADMIN" %}. Create a room to get started{% else %} in your assigned hostels{% endif %}.</p>
+  {% endif %}
+</section>
+{% endblock %}
