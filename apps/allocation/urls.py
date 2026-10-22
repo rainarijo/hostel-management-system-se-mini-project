@@ -8,6 +8,7 @@ app_name = "allocation"
 urlpatterns = [
     path("allocation/", views.index, name="index"),
     path("applications/apply/", views.apply, name="apply"),
+    path("applications/queue/", views.queue, name="queue"),
     path("applications/<str:application_no>/", views.application_detail, name="application_detail"),
     path("manage/windows/", views.window_list, name="window_list"),
     path("manage/windows/new/", views.window_create, name="window_create"),

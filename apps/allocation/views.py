@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -10,7 +11,11 @@ from apps.rooms.models import RoomType
 
 from .forms import ApplicationForm, ApplicationWindowForm
 from .models import ApplicationWindow, RoomApplication
-from .services import get_open_window, submit_application, vacancy_by_room_type, window_status
+from .services import (GROUP_PRIORITY, GROUP_YEAR_1, get_open_window, list_pending, submit_application,
+                       vacancy_by_room_type, window_status)
+
+YEAR_CHOICES = (1, 2, 3, 4)
+GROUP_BADGES = {GROUP_YEAR_1: ("Year 1", "text-bg-success"), GROUP_PRIORITY: ("Priority", "text-bg-warning")}
 
 
 @role_required(Role.STUDENT, Role.WARDEN, Role.ADMIN)
@@ -97,3 +102,24 @@ def application_detail(request, application_no):
                    if getattr(application, f"preference_{n}")]
     return render(request, "allocation/application_detail.html",
                   {"application": application, "preferences": preferences})
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+def queue(request):
+    """FR-4.4: pending applications in priority order, filterable by year and room-type preference."""
+    year = request.GET.get("year", "")
+    year = int(year) if year.isdigit() and int(year) in YEAR_CHOICES else None
+    pref = request.GET.get("pref", "")
+    pref = pref if pref in RoomType.values else None
+
+    page = Paginator(list_pending(request.user, year=year, preference=pref), 25).get_page(request.GET.get("page"))
+    for application in page:
+        application.badge = GROUP_BADGES.get(application.priority_group, ("Standard", "text-bg-secondary"))
+        application.preferences = [getattr(application, f"get_preference_{n}_display")() for n in (1, 2, 3)
+                                   if getattr(application, f"preference_{n}")]
+    filters = request.GET.copy()
+    filters.pop("page", None)
+    return render(request, "allocation/queue.html", {
+        "page": page, "year": year, "pref": pref, "filters": filters.urlencode(),
+        "year_choices": YEAR_CHOICES, "room_types": RoomType.choices,
+    })

@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.allocation.models import Allocation, RoomApplication
+from apps.allocation.services import list_pending
 from apps.complaints.models import Complaint
 from apps.core.permissions import role_required
 from apps.notifications.models import Announcement
@@ -51,7 +52,7 @@ def warden_dashboard(request):
     overdue = timezone.now() - timezone.timedelta(hours=72)
     return render(request, "core/warden_dashboard.html", {
         "hostels": hostels, "beds": _bed_summary(rooms),
-        "pending_applications": RoomApplication.objects.filter(status="PENDING").count(),
+        "pending_applications": list_pending(request.user).count(),
         "overdue_complaints": Complaint.objects.filter(
             room__hostel__in=hostels, status__in=["OPEN", "IN_PROGRESS"], created_at__lt=overdue).count(),
     })
