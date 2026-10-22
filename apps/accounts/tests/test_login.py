@@ -35,8 +35,27 @@ class LoginTests(TestCase):
 
     def test_logout_requires_post_and_ends_session(self):
         self.client.login(email="stu@hms.local", password=PASSWORD)
-        self.assertEqual(self.client.get(reverse("accounts:logout")).status_code, 405)
+        self.assertEqual(
+            self.client.get(reverse("accounts:logout")).status_code,
+            405,
+        )
+
         self.client.post(reverse("accounts:logout"))
-        resp = self.client.get(reverse("core:home"))
-        self.assertEqual(resp.status_code, 302)
-        self.assertIn(reverse("accounts:login"), resp["Location"])
+        response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            reverse("accounts:login") in response["Location"]
+        )
+
+    def test_inactive_user_cannot_log_in(self):
+        self.user.is_active = False
+        self.user.save(update_fields=["is_active"])
+
+        response = self.client.post(
+            self.url,
+            {"email": "stu@hms.local", "password": PASSWORD},
+        )
+
+        self.assertContains(response, "Invalid e-mail or password.")
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
