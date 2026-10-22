@@ -1,14 +1,15 @@
 """Tests for FR-1.3, FR-1.5, FR-1.7. Test case IDs follow the Test Plan (TC-02, TC-03)."""
+from datetime import timedelta
 from django.test import TestCase
 from django.urls import reverse
-
+from django.utils import timezone
 from apps.accounts.models import Role, User
 from apps.core.models import AuditLog
-
 PASSWORD = "Strongpass2026"
 
 
 class LoginTests(TestCase):
+
     def setUp(self):
         self.user = User.objects.create_user("stu@hms.local", PASSWORD, role=Role.STUDENT)
         self.url = reverse("accounts:login")
@@ -59,3 +60,36 @@ class LoginTests(TestCase):
 
         self.assertContains(response, "Invalid e-mail or password.")
         self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+    def test_successful_login_resets_failed_attempts(self):
+        self.user.failed_login_count = 3
+        self.user.first_failed_login_at = timezone.now() - timedelta(minutes=2)
+        self.user.save(
+            update_fields=["failed_login_count", "first_failed_login_at"]
+        )
+
+        response = self.client.post(
+            self.url,
+            {"email": "stu@hms.local", "password": PASSWORD},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.failed_login_count, 0)
+        self.assertIsNone(self.user.first_failed_login_at)
+
+    def test_failure_window_resets_old_failed_attempts(self):
+        self.user.failed_login_count = 4
+        self.user.first_failed_login_at = timezone.now() - timedelta(minutes=11)
+        self.user.save(
+            update_fields=["failed_login_count", "first_failed_login_at"]
+        )
+
+        self.client.post(
+            self.url,
+            {"email": "stu@hms.local", "password": "Wrongpass99"},
+        )
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.failed_login_count, 1)
+        self.assertFalse(self.user.is_locked)
