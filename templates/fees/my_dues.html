@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}My allocation and dues - Hostel Management{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">My allocation and dues</h1>
+
+{% for alloc in allocations %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h2 class="h5 card-title">
+      {{ alloc.room.hostel.name }}, room {{ alloc.room.room_no }}, bed {{ alloc.bed_no }}
+      <span class="badge text-bg-secondary ms-2">{{ alloc.get_status_display }}</span>
+    </h2>
+    <p class="text-muted small mb-3">
+      Academic year {{ alloc.academic_year|default:"-" }} &middot; from {{ alloc.start_date|date:"d-m-Y" }}
+      {% if alloc.end_date %}to {{ alloc.end_date|date:"d-m-Y" }}{% endif %}
+    </p>
+
+    {% with fee=alloc.fee_record %}
+    {% if fee %}
+    <dl class="row mb-3">
+      <dt class="col-sm-3">Total fee</dt><dd class="col-sm-9">INR {{ fee.total_amount|floatformat:2 }}</dd>
+      <dt class="col-sm-3">Amount paid</dt><dd class="col-sm-9">INR {{ fee.amount_paid|floatformat:2 }}</dd>
+      <dt class="col-sm-3">Balance</dt><dd class="col-sm-9">INR {{ fee.balance|floatformat:2 }}</dd>
+    </dl>
+
+    <h3 class="h6">Payment history</h3>
+    {% if fee.payments.all %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr><th scope="col">Receipt</th><th scope="col">Date</th><th scope="col">Mode</th>
+              <th scope="col" class="text-end">Amount</th></tr>
+        </thead>
+        <tbody>
+        {% for p in fee.payments.all %}
+          <tr>
+            <td>{{ p.receipt_no }}</td>
+            <td>{{ p.paid_on|date:"d-m-Y" }}</td>
+            <td>{{ p.get_mode_display }}</td>
+            <td class="text-end">INR {{ p.amount|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No payments recorded yet.</p>
+    {% endif %}
+    {% else %}
+    <p class="text-muted mb-0">No fee record exists for this allocation yet.</p>
+    {% endif %}
+    {% endwith %}
+  </div>
+</div>
+{% empty %}
+<div class="alert alert-info" role="alert">You do not have a room allocation yet, so there are no dues to show.</div>
+{% endfor %}
+{% endblock %}
