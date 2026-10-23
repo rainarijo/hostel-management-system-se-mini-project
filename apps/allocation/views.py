@@ -1,18 +1,21 @@
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.core.audit import log_action
-from apps.core.exceptions import BusinessRuleViolation, ProfileIncomplete
+from apps.core.exceptions import (AccessDenied, BusinessRuleViolation, ObjectNotFound, ProfileIncomplete,
+                                  ValidationFailure)
 from apps.core.permissions import role_required
-from apps.rooms.models import RoomType
+from apps.rooms.models import Room, RoomType
 
 from .forms import ApplicationForm, ApplicationWindowForm
-from .models import ApplicationWindow, RoomApplication
-from .services import (GROUP_PRIORITY, GROUP_YEAR_1, get_open_window, list_pending, submit_application,
-                       vacancy_by_room_type, window_status)
+from .models import ApplicationStatus, ApplicationWindow, RoomApplication
+from .services import (GROUP_PRIORITY, GROUP_YEAR_1, allocate, candidate_beds, get_open_window, list_pending,
+                       scoped_applications, submit_application, vacancy_by_room_type, window_status)
 
 YEAR_CHOICES = (1, 2, 3, 4)
 GROUP_BADGES = {GROUP_YEAR_1: ("Year 1", "text-bg-success"), GROUP_PRIORITY: ("Priority", "text-bg-warning")}
@@ -123,3 +126,56 @@ def queue(request):
         "page": page, "year": year, "pref": pref, "filters": filters.urlencode(),
         "year_choices": YEAR_CHOICES, "room_types": RoomType.choices,
     })
+
+
+def _preferences(application):
+    return [getattr(application, f"preference_{n}") for n in (1, 2, 3) if getattr(application, f"preference_{n}")]
+
+
+def _bed_options(application, actor):
+    preferences = _preferences(application)
+    options = []
+    for room, bed_no in candidate_beds(application, actor):
+        label = f"{room.hostel.name} - Room {room.room_no} ({room.get_room_type_display()}) - Bed {bed_no}"
+        if room.room_type in preferences:
+            label += f" - preference {preferences.index(room.room_type) + 1}"
+        options.append((f"{room.pk}:{bed_no}", label))
+    return options
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+def allocate_view(request, pk):
+    """FR-4.5, FR-4.6: choose a vacant bed for one pending application."""
+    application = get_object_or_404(scoped_applications(request.user).select_related("student"), pk=pk)
+    error, field_error, status, chosen = None, None, 200, request.POST.get("bed", "")
+    if application.status != ApplicationStatus.PENDING:
+        error = "This application is no longer pending."
+    elif request.method == "POST":
+        room_pk, _, bed_no = chosen.partition(":")
+        room = Room.objects.filter(pk=room_pk).first() if room_pk.isdigit() else None
+        if room is None or not bed_no.isdigit():
+            field_error = "Choose a bed."
+        else:
+            try:
+                allocation = allocate(application, room, int(bed_no), request.user)
+            except (ObjectNotFound, Room.DoesNotExist):
+                raise Http404
+            except AccessDenied:
+                raise PermissionDenied
+            except BusinessRuleViolation as exc:
+                error, status = exc.message, 409
+            except ValidationFailure as exc:
+                field_error = exc.message
+            else:
+                messages.success(request, f"{application.application_no} allocated to {allocation.room}, "
+                                          f"bed {allocation.bed_no} (Provisional).")
+                return redirect("allocation:queue")
+        application.refresh_from_db()
+
+    student = application.student
+    return render(request, "allocation/allocate.html", {
+        "application": application, "student": student, "error": error, "field_error": field_error,
+        "chosen": chosen, "pending": application.status == ApplicationStatus.PENDING,
+        "preferences": [RoomType(p).label for p in _preferences(application)],
+        "options": _bed_options(application, request.user) if application.status == ApplicationStatus.PENDING else [],
+    }, status=status)
