@@ -124,7 +124,7 @@ class ConfigurationTests(TestCase):
         room = Room.objects.create(hostel=self.hostel, room_no="101", floor=1, room_type="DOUBLE",
                                    capacity=2, annual_fee=75000)
         profile = StudentProfile.objects.create(
-            user=self.student, srn="PES1UG24CS7001", name="Integrity Student",
+            user=self.student, srn="PES1UG24CS701", name="Integrity Student",
             gender="M", program="B.Tech CSE", year=1)
         Allocation.objects.create(student=profile, room=room, bed_no=1, start_date=date.today())
         self.login(self.admin)
