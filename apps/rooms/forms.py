@@ -2,7 +2,7 @@ from django import forms
 
 from apps.accounts.models import Role, User
 
-from .models import Hostel, Room
+from .models import Hostel, Room, RoomType
 
 
 class BootstrapModelForm(forms.ModelForm):
@@ -44,3 +44,32 @@ class RoomForm(BootstrapModelForm):
             "annual_fee": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 500000, "step": "0.01"}),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
+
+
+class AvailabilityFilterForm(forms.Form):
+    hostel = forms.IntegerField(required=False, min_value=1, widget=forms.NumberInput(
+        attrs={"class": "form-control"}))
+    floor = forms.IntegerField(required=False, min_value=0, max_value=20, widget=forms.NumberInput(
+        attrs={"class": "form-control"}))
+    room_type = forms.CharField(required=False, max_length=10, widget=forms.TextInput(
+        attrs={"class": "form-control"}))
+
+    def clean_room_type(self):
+        value = self.cleaned_data["room_type"].casefold()
+        if not value:
+            return ""
+        for room_type in RoomType:
+            if value in (room_type.value.casefold(), room_type.label.casefold()):
+                return room_type.value
+        raise forms.ValidationError("Select a valid room type.")
+
+
+class RoomCSVImportForm(forms.Form):
+    file = forms.FileField(label="Rooms CSV file", widget=forms.ClearableFileInput(
+        attrs={"class": "form-control"}))
+
+    def clean_file(self):
+        uploaded_file = self.cleaned_data["file"]
+        if not uploaded_file.name.lower().endswith(".csv"):
+            raise forms.ValidationError("Upload a CSV file.")
+        return uploaded_file
