@@ -118,12 +118,12 @@ class ConfigurationTests(TestCase):
 
     def test_fr32_admin_can_create_and_edit_room_with_audit(self):
         self.login(self.admin)
-        response = self.post_room(floor=0, capacity=1, room_type="SINGLE", annual_fee="0.00", status="FULL")
+        response = self.post_room(floor=0, capacity=1, room_type="SINGLE", annual_fee="0.00", status="AVAILABLE")
         self.assertRedirects(response, reverse("rooms:index"))
         room = Room.objects.get(hostel=self.hostel, room_no="101")
         self.assertEqual(room.floor, 0)
         self.assertEqual(room.annual_fee, 0)
-        self.assertEqual(room.status, "FULL")
+        self.assertEqual(room.status, "AVAILABLE")
         self.assertTrue(AuditLog.objects.filter(action="ROOM_CREATED", entity_id=str(room.pk)).exists())
 
         response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
@@ -149,6 +149,52 @@ class ConfigurationTests(TestCase):
                 response = self.post_room(**invalid)
                 self.assertEqual(response.status_code, 200)
                 self.assertFalse(Room.objects.filter(hostel=self.hostel).exists())
+
+    def test_fr32_room_status_must_match_occupancy(self):
+        self.login(self.admin)
+        response = self.post_room(status="FULL")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("status", response.context["form"].errors)
+        self.assertFalse(Room.objects.filter(hostel=self.hostel).exists())
+
+        self.assertEqual(self.post_room().status_code, 302)
+        room = Room.objects.get(hostel=self.hostel)
+        response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
+            "hostel": self.hostel.pk, "room_no": room.room_no, "floor": room.floor,
+            "room_type": room.room_type, "capacity": room.capacity, "annual_fee": room.annual_fee,
+            "status": "FULL",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("status", response.context["form"].errors)
+        room.refresh_from_db()
+        self.assertEqual(room.status, "AVAILABLE")
+
+    def test_fr32_capacity_cannot_be_reduced_below_active_occupancy(self):
+        from datetime import date
+
+        from apps.allocation.models import Allocation
+        from apps.students.models import StudentProfile
+
+        self.login(self.admin)
+        self.assertEqual(self.post_room().status_code, 302)
+        room = Room.objects.get(hostel=self.hostel)
+        students = []
+        for number in (1, 2):
+            user = User.objects.create_user(f"capacity{number}@hms.local", PASSWORD, role=Role.STUDENT)
+            students.append(StudentProfile.objects.create(
+                user=user, srn=f"PES1UG24CS8{number:02d}", name=f"Capacity Student {number}",
+                gender="M", program="B.Tech CSE", year=1))
+        for bed_no, student in enumerate(students, start=1):
+            Allocation.objects.create(student=student, room=room, bed_no=bed_no, start_date=date.today())
+
+        response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
+            "hostel": self.hostel.pk, "room_no": room.room_no, "floor": room.floor,
+            "room_type": room.room_type, "capacity": 1, "annual_fee": room.annual_fee, "status": "FULL",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("capacity", response.context["form"].errors)
+        room.refresh_from_db()
+        self.assertEqual(room.capacity, 2)
 
     def test_fr32_room_number_must_be_unique_within_hostel(self):
         self.login(self.admin)

@@ -1,4 +1,5 @@
 """Allocation business logic (SAD 4.4). Views call these; they raise apps.core.exceptions on rule violations."""
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils import timezone
@@ -10,10 +11,38 @@ from apps.core.exceptions import (AccessDenied, DuplicateApplication, ProfileInc
 from apps.core.sequences import next_number
 from apps.rooms.models import Room, RoomStatus, RoomType
 
-from .models import ACTIVE_STATUSES, ApplicationStatus, ApplicationWindow, RoomApplication
+from .models import ACTIVE_STATUSES, Allocation, ApplicationStatus, ApplicationWindow, RoomApplication
 
 # FR-4.4 priority groups, lowest number first in the queue.
 GROUP_YEAR_1, GROUP_PRIORITY, GROUP_STANDARD = 0, 1, 2
+
+
+def validate_allocation_room(room, allocation=None, status=None, bed_no=None):
+    """Validate an active allocation against the target room's current availability."""
+    status = status if status is not None else getattr(allocation, "status", None)
+    if status not in ACTIVE_STATUSES:
+        return
+
+    rooms = Room.objects.select_related("hostel")
+    if transaction.get_connection().in_atomic_block:
+        rooms = rooms.select_for_update()
+    room = rooms.get(pk=room.pk)
+
+    if room.status == RoomStatus.MAINTENANCE:
+        raise ValidationError("Allocations cannot be made to a room under maintenance.")
+    if not room.is_active:
+        raise ValidationError("Allocations cannot be made to an inactive room.")
+    if not room.hostel.is_active:
+        raise ValidationError("Allocations cannot be made in an inactive hostel.")
+    bed_no = bed_no if bed_no is not None else getattr(allocation, "bed_no", None)
+    if bed_no is not None and not 1 <= bed_no <= room.capacity:
+        raise ValidationError("The bed number must be within the room's capacity.")
+
+    occupied = Allocation.objects.active().filter(room=room)
+    if allocation is not None and allocation.pk:
+        occupied = occupied.exclude(pk=allocation.pk)
+    if occupied.count() >= room.capacity:
+        raise ValidationError("The room has no vacant beds.")
 
 
 def get_open_window(today=None):

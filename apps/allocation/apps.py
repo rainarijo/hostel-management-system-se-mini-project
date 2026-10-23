@@ -6,3 +6,6 @@ class AllocationConfig(AppConfig):
     name = "apps.allocation"
     label = "allocation"
     verbose_name = "Applications & Allocation"
+
+    def ready(self):
+        from . import signals  # noqa: F401
