@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Import rooms · Hostel Management System{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="page-title">Import rooms from CSV</h1>
+  <p class="page-lede mb-0">Each row is validated independently. Valid rows are saved even when other rows are rejected.</p>
+</div>
+
+<section class="panel mb-4" aria-labelledby="upload-heading">
+  <h2 class="h5" id="upload-heading">Upload rooms</h2>
+  <p>Required header: <code>hostel_name,room_no,floor,room_type,capacity,annual_fee,status</code>.</p>
+  <p>Use an existing hostel name and the values SINGLE, DOUBLE or TRIPLE for room type; use AVAILABLE, FULL or MAINTENANCE for status.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+      {{ form.file }}
+      {% for error in form.file.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+    <button class="btn btn-primary" type="submit">Import CSV</button>
+  </form>
+</section>
+
+{% if report %}
+<section class="panel mb-4" aria-labelledby="accepted-heading">
+  <h2 class="h5" id="accepted-heading">Accepted rows</h2>
+  {% if report.accepted %}
+  <ul class="mb-0">
+    {% for result in report.accepted %}
+    <li>Row {{ result.row }}:
+      {% for key, value in result.values.items %}{{ key }}={{ value }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="mb-0">No rows were accepted.</p>{% endif %}
+</section>
+<section class="panel" aria-labelledby="rejected-heading">
+  <h2 class="h5" id="rejected-heading">Rejected rows</h2>
+  {% if report.rejected %}
+  <ul class="mb-0">
+    {% for result in report.rejected %}
+    <li>Row {{ result.row }}:
+      {% for key, value in result.values.items %}{{ key }}={{ value }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      — {{ result.reason }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="mb-0">No rows were rejected.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Room availability · Hostel Management System{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="page-title">Room availability</h1>
+  <p class="page-lede mb-0">Occupancy is calculated from active allocations.</p>
+</div>
+
+<section class="panel mb-4" aria-labelledby="filters-heading">
+  <h2 class="h5" id="filters-heading">Filter rooms</h2>
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label" for="{{ form.hostel.id_for_label }}">Hostel</label>
+      <select class="form-select" name="hostel" id="{{ form.hostel.id_for_label }}">
+        <option value="">All hostels in your scope</option>
+        {% for hostel in hostels %}
+        <option value="{{ hostel.pk }}" {% if form.hostel.value|stringformat:"s" == hostel.pk|stringformat:"s" %}selected{% endif %}>{{ hostel.name }}</option>
+        {% endfor %}
+      </select>
+      {% for error in form.hostel.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="{{ form.floor.id_for_label }}">Floor</label>
+      {{ form.floor }}
+      {% for error in form.floor.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="{{ form.room_type.id_for_label }}">Room type</label>
+      {{ form.room_type }}
+      <div class="form-text">Enter Single, Double or Triple.</div>
+      {% for error in form.room_type.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-2"><button class="btn btn-primary" type="submit">Apply filters</button></div>
+  </form>
+</section>
+
+<section class="panel" aria-labelledby="rooms-heading">
+  <h2 class="h5" id="rooms-heading">Rooms</h2>
+  {% if rooms %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Room capacity, occupancy and vacancies</caption>
+      <thead><tr><th>Hostel</th><th>Room</th><th>Floor</th><th>Type</th>
+        <th>Capacity</th><th>Occupied</th><th>Vacant</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for room in rooms %}
+        <tr><td>{{ room.hostel_name }}</td><td>{{ room.room_no }}</td><td>{{ room.floor }}</td>
+          <td>{{ room.room_type }}</td><td>{{ room.capacity }}</td><td>{{ room.occupied }}</td>
+          <td>{{ room.vacant }}</td><td>{{ room.status }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="mb-0">No rooms match the selected filters.</p>
+  {% endif %}
+</section>
+{% endblock %}
