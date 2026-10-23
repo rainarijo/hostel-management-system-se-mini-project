@@ -1,13 +1,17 @@
 """Tests for FR-3.1 and FR-3.2 hostel and room configuration."""
+from datetime import date
 from unittest.mock import patch
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import Role, User
+from apps.allocation.models import Allocation
 from apps.core.models import AuditLog
 from apps.rooms.models import Hostel, Room
+from apps.students.models import StudentProfile
 
 PASSWORD = "Strongpass2026"
 
@@ -116,14 +120,77 @@ class ConfigurationTests(TestCase):
         self.assertTrue(AuditLog.objects.filter(action="HOSTEL_DEACTIVATED",
                                                 entity_id=str(self.hostel.pk)).exists())
 
+    def test_fr35_room_and_hostel_deactivation_reject_active_allocations(self):
+        room = Room.objects.create(hostel=self.hostel, room_no="101", floor=1, room_type="DOUBLE",
+                                   capacity=2, annual_fee=75000)
+        profile = StudentProfile.objects.create(
+            user=self.student, srn="PES1UG24CS701", name="Integrity Student",
+            gender="M", program="B.Tech CSE", year=1)
+        Allocation.objects.create(student=profile, room=room, bed_no=1, start_date=date.today())
+        self.login(self.admin)
+
+        response = self.client.post(reverse("rooms:room_deactivate", args=[room.pk]), follow=True)
+        self.assertContains(response, "Room has active allocations")
+        room.refresh_from_db()
+        self.assertTrue(room.is_active)
+        self.assertFalse(AuditLog.objects.filter(action="ROOM_DEACTIVATED").exists())
+
+        response = self.client.post(reverse("rooms:hostel_deactivate", args=[self.hostel.pk]), follow=True)
+        self.assertContains(response, "Hostel has active allocations")
+        self.hostel.refresh_from_db()
+        self.assertTrue(self.hostel.is_active)
+        self.assertFalse(AuditLog.objects.filter(action="HOSTEL_DEACTIVATED").exists())
+
+    def test_fr35_room_and_hostel_deactivation_can_be_reversed(self):
+        room = Room.objects.create(hostel=self.hostel, room_no="101", floor=1, room_type="DOUBLE",
+                                   capacity=2, annual_fee=75000)
+        self.login(self.admin)
+
+        self.client.post(reverse("rooms:room_deactivate", args=[room.pk]))
+        room.refresh_from_db()
+        self.assertFalse(room.is_active)
+        response = self.client.post(reverse("rooms:room_reactivate", args=[room.pk]), follow=True)
+        room.refresh_from_db()
+        self.assertTrue(room.is_active)
+        self.assertContains(response, "reactivated")
+
+        self.client.post(reverse("rooms:hostel_deactivate", args=[self.hostel.pk]))
+        self.hostel.refresh_from_db()
+        self.assertFalse(self.hostel.is_active)
+        response = self.client.post(reverse("rooms:hostel_reactivate", args=[self.hostel.pk]), follow=True)
+        self.hostel.refresh_from_db()
+        self.assertTrue(self.hostel.is_active)
+        self.assertContains(response, "reactivated")
+        self.assertTrue(AuditLog.objects.filter(action="ROOM_DEACTIVATED").exists())
+        self.assertTrue(AuditLog.objects.filter(action="ROOM_REACTIVATED").exists())
+        self.assertTrue(AuditLog.objects.filter(action="HOSTEL_DEACTIVATED").exists())
+        self.assertTrue(AuditLog.objects.filter(action="HOSTEL_REACTIVATED").exists())
+
+    def test_fr35_rooms_and_hostels_cannot_be_physically_deleted(self):
+        room = Room.objects.create(hostel=self.hostel, room_no="101", floor=1, room_type="DOUBLE",
+                                   capacity=2, annual_fee=75000)
+        admin = User.objects.create_superuser("delete-admin@hms.local", PASSWORD)
+        self.login(admin)
+        self.assertEqual(self.client.get(reverse("admin:rooms_room_delete", args=[room.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("admin:rooms_hostel_delete", args=[self.hostel.pk])).status_code, 403)
+
+        with self.assertRaises(ProtectedError), transaction.atomic():
+            room.delete()
+        with self.assertRaises(ProtectedError), transaction.atomic():
+            Room.objects.filter(pk=room.pk).delete()
+        with self.assertRaises(ProtectedError), transaction.atomic():
+            Hostel.objects.filter(pk=self.hostel.pk).delete()
+        self.assertTrue(Room.objects.filter(pk=room.pk).exists())
+        self.assertTrue(Hostel.objects.filter(pk=self.hostel.pk).exists())
+
     def test_fr32_admin_can_create_and_edit_room_with_audit(self):
         self.login(self.admin)
-        response = self.post_room(floor=0, capacity=1, room_type="SINGLE", annual_fee="0.00", status="FULL")
+        response = self.post_room(floor=0, capacity=1, room_type="SINGLE", annual_fee="0.00", status="AVAILABLE")
         self.assertRedirects(response, reverse("rooms:index"))
         room = Room.objects.get(hostel=self.hostel, room_no="101")
         self.assertEqual(room.floor, 0)
         self.assertEqual(room.annual_fee, 0)
-        self.assertEqual(room.status, "FULL")
+        self.assertEqual(room.status, "AVAILABLE")
         self.assertTrue(AuditLog.objects.filter(action="ROOM_CREATED", entity_id=str(room.pk)).exists())
 
         response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
@@ -149,6 +216,52 @@ class ConfigurationTests(TestCase):
                 response = self.post_room(**invalid)
                 self.assertEqual(response.status_code, 200)
                 self.assertFalse(Room.objects.filter(hostel=self.hostel).exists())
+
+    def test_fr32_room_status_must_match_occupancy(self):
+        self.login(self.admin)
+        response = self.post_room(status="FULL")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("status", response.context["form"].errors)
+        self.assertFalse(Room.objects.filter(hostel=self.hostel).exists())
+
+        self.assertEqual(self.post_room().status_code, 302)
+        room = Room.objects.get(hostel=self.hostel)
+        response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
+            "hostel": self.hostel.pk, "room_no": room.room_no, "floor": room.floor,
+            "room_type": room.room_type, "capacity": room.capacity, "annual_fee": room.annual_fee,
+            "status": "FULL",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("status", response.context["form"].errors)
+        room.refresh_from_db()
+        self.assertEqual(room.status, "AVAILABLE")
+
+    def test_fr32_capacity_cannot_be_reduced_below_active_occupancy(self):
+        from datetime import date
+
+        from apps.allocation.models import Allocation
+        from apps.students.models import StudentProfile
+
+        self.login(self.admin)
+        self.assertEqual(self.post_room().status_code, 302)
+        room = Room.objects.get(hostel=self.hostel)
+        students = []
+        for number in (1, 2):
+            user = User.objects.create_user(f"capacity{number}@hms.local", PASSWORD, role=Role.STUDENT)
+            students.append(StudentProfile.objects.create(
+                user=user, srn=f"PES1UG24CS8{number:02d}", name=f"Capacity Student {number}",
+                gender="M", program="B.Tech CSE", year=1))
+        for bed_no, student in enumerate(students, start=1):
+            Allocation.objects.create(student=student, room=room, bed_no=bed_no, start_date=date.today())
+
+        response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
+            "hostel": self.hostel.pk, "room_no": room.room_no, "floor": room.floor,
+            "room_type": room.room_type, "capacity": 1, "annual_fee": room.annual_fee, "status": "FULL",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("capacity", response.context["form"].errors)
+        room.refresh_from_db()
+        self.assertEqual(room.capacity, 2)
 
     def test_fr32_room_number_must_be_unique_within_hostel(self):
         self.login(self.admin)
@@ -177,8 +290,11 @@ class ConfigurationTests(TestCase):
                 ("rooms:hostel_create", ()),
                 ("rooms:hostel_edit", (self.hostel.pk,)),
                 ("rooms:hostel_deactivate", (self.hostel.pk,)),
+                ("rooms:hostel_reactivate", (self.hostel.pk,)),
                 ("rooms:room_create", ()),
                 ("rooms:room_edit", (1,)),
+                ("rooms:room_deactivate", (1,)),
+                ("rooms:room_reactivate", (1,)),
             ):
                 response = self.client.post(reverse(name, args=args), {})
                 self.assertEqual(response.status_code, 403, (user.role, name))
@@ -189,8 +305,11 @@ class ConfigurationTests(TestCase):
             reverse("rooms:hostel_create"),
             reverse("rooms:hostel_edit", args=[self.hostel.pk]),
             reverse("rooms:hostel_deactivate", args=[self.hostel.pk]),
+            reverse("rooms:hostel_reactivate", args=[self.hostel.pk]),
             reverse("rooms:room_create"),
             reverse("rooms:room_edit", args=[1]),
+            reverse("rooms:room_deactivate", args=[1]),
+            reverse("rooms:room_reactivate", args=[1]),
         )
         for path in paths:
             with self.subTest(path=path):

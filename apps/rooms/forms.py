@@ -1,8 +1,9 @@
+
 from django import forms
 
 from apps.accounts.models import Role, User
 
-from .models import Hostel, Room, RoomType
+from .models import Hostel, Room, RoomStatus, RoomType
 
 
 class BootstrapModelForm(forms.ModelForm):
@@ -26,7 +27,9 @@ class HostelForm(BootstrapModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["wardens"].queryset = User.objects.filter(role=Role.WARDEN).order_by("email")
+        self.fields["wardens"].queryset = User.objects.filter(
+            role=Role.WARDEN
+        ).order_by("email")
         self.fields["wardens"].required = True
         self.fields["wardens"].help_text = "Select one or more Wardens for this hostel."
 
@@ -34,39 +37,100 @@ class HostelForm(BootstrapModelForm):
 class RoomForm(BootstrapModelForm):
     class Meta:
         model = Room
-        fields = ["hostel", "room_no", "floor", "room_type", "capacity", "annual_fee", "status"]
+        fields = [
+            "hostel",
+            "room_no",
+            "floor",
+            "room_type",
+            "capacity",
+            "annual_fee",
+            "status",
+        ]
         widgets = {
             "hostel": forms.Select(attrs={"class": "form-select"}),
             "room_no": forms.TextInput(attrs={"class": "form-control"}),
-            "floor": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 20}),
+            "floor": forms.NumberInput(
+                attrs={"class": "form-control", "min": 0, "max": 20}
+            ),
             "room_type": forms.Select(attrs={"class": "form-select"}),
-            "capacity": forms.NumberInput(attrs={"class": "form-control", "min": 1, "max": 4}),
-            "annual_fee": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 500000, "step": "0.01"}),
+            "capacity": forms.NumberInput(
+                attrs={"class": "form-control", "min": 1, "max": 4}
+            ),
+            "annual_fee": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "min": 0,
+                    "max": 500000,
+                    "step": "0.01",
+                }
+            ),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
 
+    def clean(self):
+        cleaned = super().clean()
+        capacity = cleaned.get("capacity")
+        status = cleaned.get("status")
+        occupancy = self.instance.occupancy if self.instance.pk else 0
+
+        if capacity is not None and occupancy > capacity:
+            self.add_error(
+                "capacity",
+                "Capacity cannot be lower than the room's active occupancy.",
+            )
+        if (
+            capacity is not None
+            and status == RoomStatus.AVAILABLE
+            and occupancy >= capacity
+        ):
+            self.add_error("status", "A room at capacity must be marked Full.")
+        if (
+            capacity is not None
+            and status == RoomStatus.FULL
+            and occupancy < capacity
+        ):
+            self.add_error(
+                "status",
+                "A room with vacant beds cannot be marked Full.",
+            )
+        return cleaned
+
 
 class AvailabilityFilterForm(forms.Form):
-    hostel = forms.IntegerField(required=False, min_value=1, widget=forms.NumberInput(
-        attrs={"class": "form-control"}))
-    floor = forms.IntegerField(required=False, min_value=0, max_value=20, widget=forms.NumberInput(
-        attrs={"class": "form-control"}))
-    room_type = forms.CharField(required=False, max_length=10, widget=forms.TextInput(
-        attrs={"class": "form-control"}))
+    hostel = forms.IntegerField(
+        required=False,
+        min_value=1,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    floor = forms.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=20,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    room_type = forms.CharField(
+        required=False,
+        max_length=10,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
 
     def clean_room_type(self):
         value = self.cleaned_data["room_type"].casefold()
         if not value:
             return ""
+
         for room_type in RoomType:
             if value in (room_type.value.casefold(), room_type.label.casefold()):
                 return room_type.value
+
         raise forms.ValidationError("Select a valid room type.")
 
 
 class RoomCSVImportForm(forms.Form):
-    file = forms.FileField(label="Rooms CSV file", widget=forms.ClearableFileInput(
-        attrs={"class": "form-control"}))
+    file = forms.FileField(
+        label="Rooms CSV file",
+        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
+    )
 
     def clean_file(self):
         uploaded_file = self.cleaned_data["file"]

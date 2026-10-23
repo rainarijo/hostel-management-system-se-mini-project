@@ -6,3 +6,6 @@ class RoomsConfig(AppConfig):
     name = "apps.rooms"
     label = "rooms"
     verbose_name = "Hostels & Rooms"
+
+    def ready(self):
+        from . import signals  # noqa: F401

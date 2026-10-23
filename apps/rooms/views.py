@@ -49,7 +49,7 @@ def _room_audit_value(room):
     return (
         f"Hostel: {room.hostel.name}; room: {room.room_no}; floor: {room.floor}; "
         f"type: {room.get_room_type_display()}; capacity: {room.capacity}; "
-        f"annual fee: {room.annual_fee}; status: {room.get_status_display()}"
+        f"annual fee: {room.annual_fee}; status: {room.get_status_display()}; active: {room.is_active}"
     )
 
 
@@ -85,9 +85,16 @@ def hostel_edit(request, pk):
 
 @role_required(Role.ADMIN)
 @require_POST
+@transaction.atomic
 def hostel_deactivate(request, pk):
-    hostel = get_object_or_404(Hostel, pk=pk)
+    from apps.allocation.models import Allocation
+
+    hostel = get_object_or_404(Hostel.objects.select_for_update(), pk=pk)
     if hostel.is_active:
+        room_ids = list(Room.objects.select_for_update().filter(hostel=hostel).values_list("pk", flat=True))
+        if Allocation.objects.active().filter(room_id__in=room_ids).exists():
+            messages.error(request, "Hostel has active allocations")
+            return redirect("rooms:index")
         old = _hostel_audit_value(hostel)
         hostel.is_active = False
         hostel.save(update_fields=["is_active", "updated_at"])
@@ -96,6 +103,62 @@ def hostel_deactivate(request, pk):
         messages.success(request, f"Hostel {hostel.name} deactivated.")
     else:
         messages.info(request, f"Hostel {hostel.name} is already inactive.")
+    return redirect("rooms:index")
+
+
+@role_required(Role.ADMIN)
+@require_POST
+@transaction.atomic
+def hostel_reactivate(request, pk):
+    hostel = get_object_or_404(Hostel.objects.select_for_update(), pk=pk)
+    if not hostel.is_active:
+        old = _hostel_audit_value(hostel)
+        hostel.is_active = True
+        hostel.save(update_fields=["is_active", "updated_at"])
+        log_action("HOSTEL_REACTIVATED", user=request.user, entity="hostel", entity_id=hostel.pk,
+                   old=old, new=_hostel_audit_value(hostel), request=request)
+        messages.success(request, f"Hostel {hostel.name} reactivated.")
+    else:
+        messages.info(request, f"Hostel {hostel.name} is already active.")
+    return redirect("rooms:index")
+
+
+@role_required(Role.ADMIN)
+@require_POST
+@transaction.atomic
+def room_deactivate(request, pk):
+    from apps.allocation.models import Allocation
+
+    room = get_object_or_404(Room.objects.select_for_update(), pk=pk)
+    if room.is_active:
+        if Allocation.objects.active().filter(room=room).exists():
+            messages.error(request, "Room has active allocations")
+            return redirect("rooms:index")
+        old = _room_audit_value(room)
+        room.is_active = False
+        room.save(update_fields=["is_active", "updated_at"])
+        log_action("ROOM_DEACTIVATED", user=request.user, entity="room", entity_id=room.pk,
+                   old=old, new=_room_audit_value(room), request=request)
+        messages.success(request, f"Room {room.room_no} deactivated.")
+    else:
+        messages.info(request, f"Room {room.room_no} is already inactive.")
+    return redirect("rooms:index")
+
+
+@role_required(Role.ADMIN)
+@require_POST
+@transaction.atomic
+def room_reactivate(request, pk):
+    room = get_object_or_404(Room.objects.select_for_update(), pk=pk)
+    if not room.is_active:
+        old = _room_audit_value(room)
+        room.is_active = True
+        room.save(update_fields=["is_active", "updated_at"])
+        log_action("ROOM_REACTIVATED", user=request.user, entity="room", entity_id=room.pk,
+                   old=old, new=_room_audit_value(room), request=request)
+        messages.success(request, f"Room {room.room_no} reactivated.")
+    else:
+        messages.info(request, f"Room {room.room_no} is already active.")
     return redirect("rooms:index")
 
 
