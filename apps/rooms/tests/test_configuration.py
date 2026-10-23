@@ -1,0 +1,209 @@
+"""Tests for FR-3.1 and FR-3.2 hostel and room configuration."""
+from unittest.mock import patch
+
+from django.db import IntegrityError
+from django.test import TestCase
+from django.urls import reverse
+
+from apps.accounts.models import Role, User
+from apps.core.models import AuditLog
+from apps.rooms.models import Hostel, Room
+
+PASSWORD = "Strongpass2026"
+
+
+class ConfigurationTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user("admin@hms.local", PASSWORD, role=Role.ADMIN)
+        self.warden = User.objects.create_user("warden@hms.local", PASSWORD, role=Role.WARDEN)
+        self.student = User.objects.create_user("student@hms.local", PASSWORD, role=Role.STUDENT)
+        self.hostel = Hostel.objects.create(name="North Hall", gender_type="M")
+
+    def login(self, user):
+        self.client.force_login(user)
+
+    def post_room(self, **overrides):
+        values = {
+            "hostel": self.hostel.pk,
+            "room_no": "101",
+            "floor": 1,
+            "room_type": "DOUBLE",
+            "capacity": 2,
+            "annual_fee": "75000.00",
+            "status": "AVAILABLE",
+        }
+        values.update(overrides)
+        return self.client.post(reverse("rooms:room_create"), values)
+
+    def test_fr31_fr32_admin_pages_render(self):
+        self.login(self.admin)
+        paths = (
+            reverse("rooms:index"),
+            reverse("rooms:hostel_create"),
+            reverse("rooms:hostel_edit", args=[self.hostel.pk]),
+            reverse("rooms:room_create"),
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_fr31_admin_can_create_hostel_with_assigned_warden(self):
+        self.login(self.admin)
+        response = self.client.post(reverse("rooms:hostel_create"), {
+            "name": "South Hall", "gender_type": "F", "wardens": [self.warden.pk],
+        })
+        self.assertRedirects(response, reverse("rooms:index"))
+        hostel = Hostel.objects.get(name="South Hall")
+        self.assertEqual(hostel.gender_type, "F")
+        self.assertEqual(list(hostel.wardens.all()), [self.warden])
+        self.assertTrue(AuditLog.objects.filter(action="HOSTEL_CREATED", entity_id=str(hostel.pk)).exists())
+
+    def test_fr31_hostel_requires_at_least_one_warden(self):
+        self.login(self.admin)
+        response = self.client.post(reverse("rooms:hostel_create"), {
+            "name": "South Hall", "gender_type": "F", "wardens": [],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("wardens", response.context["form"].errors)
+        self.assertFalse(Hostel.objects.filter(name="South Hall").exists())
+
+    def test_fr31_hostel_name_must_be_unique_and_assignments_must_be_wardens(self):
+        self.login(self.admin)
+        response = self.client.post(reverse("rooms:hostel_create"), {
+            "name": self.hostel.name, "gender_type": "F", "wardens": [self.warden.pk],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("name", response.context["form"].errors)
+
+        response = self.client.post(reverse("rooms:hostel_create"), {
+            "name": "South Hall", "gender_type": "F", "wardens": [self.student.pk],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("wardens", response.context["form"].errors)
+        self.assertFalse(Hostel.objects.filter(name="South Hall").exists())
+
+    def test_fr31_database_integrity_error_is_shown_on_form(self):
+        self.login(self.admin)
+        with patch("apps.rooms.forms.HostelForm.save", side_effect=IntegrityError):
+            response = self.client.post(reverse("rooms:hostel_create"), {
+                "name": "South Hall", "gender_type": "F", "wardens": [self.warden.pk],
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].non_field_errors())
+        self.assertFalse(Hostel.objects.filter(name="South Hall").exists())
+
+    def test_fr31_admin_can_edit_hostel_and_audit_old_and_new_values(self):
+        self.hostel.wardens.add(self.warden)
+        self.login(self.admin)
+        response = self.client.post(reverse("rooms:hostel_edit", args=[self.hostel.pk]), {
+            "name": "North Hall Updated", "gender_type": "F", "wardens": [self.warden.pk],
+        })
+        self.assertRedirects(response, reverse("rooms:index"))
+        self.hostel.refresh_from_db()
+        self.assertEqual(self.hostel.name, "North Hall Updated")
+        audit = AuditLog.objects.get(action="HOSTEL_UPDATED")
+        self.assertIn("North Hall", audit.old_value)
+        self.assertIn("North Hall Updated", audit.new_value)
+
+    def test_fr31_hostel_deactivation_requires_post_and_is_audited(self):
+        self.login(self.admin)
+        url = reverse("rooms:hostel_deactivate", args=[self.hostel.pk])
+        self.assertEqual(self.client.get(url).status_code, 405)
+        response = self.client.post(url)
+        self.assertRedirects(response, reverse("rooms:index"))
+        self.hostel.refresh_from_db()
+        self.assertFalse(self.hostel.is_active)
+        self.assertTrue(AuditLog.objects.filter(action="HOSTEL_DEACTIVATED",
+                                                entity_id=str(self.hostel.pk)).exists())
+
+    def test_fr32_admin_can_create_and_edit_room_with_audit(self):
+        self.login(self.admin)
+        response = self.post_room(floor=0, capacity=1, room_type="SINGLE", annual_fee="0.00", status="FULL")
+        self.assertRedirects(response, reverse("rooms:index"))
+        room = Room.objects.get(hostel=self.hostel, room_no="101")
+        self.assertEqual(room.floor, 0)
+        self.assertEqual(room.annual_fee, 0)
+        self.assertEqual(room.status, "FULL")
+        self.assertTrue(AuditLog.objects.filter(action="ROOM_CREATED", entity_id=str(room.pk)).exists())
+
+        response = self.client.post(reverse("rooms:room_edit", args=[room.pk]), {
+            "hostel": self.hostel.pk, "room_no": "102", "floor": 20, "room_type": "TRIPLE",
+            "capacity": 4, "annual_fee": "500000.00", "status": "MAINTENANCE",
+        })
+        self.assertRedirects(response, reverse("rooms:index"))
+        room.refresh_from_db()
+        self.assertEqual((room.room_no, room.floor, room.capacity), ("102", 20, 4))
+        self.assertEqual(room.annual_fee, 500000)
+        audit = AuditLog.objects.get(action="ROOM_UPDATED")
+        self.assertIn("room: 101", audit.old_value)
+        self.assertIn("room: 102", audit.new_value)
+
+    def test_fr32_room_bounds_and_choices_are_validated(self):
+        self.login(self.admin)
+        for invalid in (
+            {"floor": -1}, {"floor": 21}, {"capacity": 0}, {"capacity": 5},
+            {"annual_fee": "-0.01"}, {"annual_fee": "500000.01"},
+            {"room_type": "QUADRUPLE"}, {"status": "OCCUPIED"},
+        ):
+            with self.subTest(invalid=invalid):
+                response = self.post_room(**invalid)
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(Room.objects.filter(hostel=self.hostel).exists())
+
+    def test_fr32_room_number_must_be_unique_within_hostel(self):
+        self.login(self.admin)
+        self.assertEqual(self.post_room().status_code, 302)
+        response = self.post_room(hostel=self.hostel.pk, room_no="101")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("__all__", response.context["form"].errors)
+
+        other_hostel = Hostel.objects.create(name="South Hall", gender_type="F")
+        response = self.post_room(hostel=other_hostel.pk, room_no="101")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Room.objects.filter(room_no="101").count(), 2)
+
+    def test_fr32_database_integrity_error_is_shown_on_form(self):
+        self.login(self.admin)
+        with patch("apps.rooms.forms.RoomForm.save", side_effect=IntegrityError):
+            response = self.post_room()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].non_field_errors())
+        self.assertFalse(Room.objects.filter(hostel=self.hostel).exists())
+
+    def test_fr32_only_administrator_can_change_configuration(self):
+        for user in (self.warden, self.student):
+            self.login(user)
+            for name, args in (
+                ("rooms:hostel_create", ()),
+                ("rooms:hostel_edit", (self.hostel.pk,)),
+                ("rooms:hostel_deactivate", (self.hostel.pk,)),
+                ("rooms:room_create", ()),
+                ("rooms:room_edit", (1,)),
+            ):
+                response = self.client.post(reverse(name, args=args), {})
+                self.assertEqual(response.status_code, 403, (user.role, name))
+
+    def test_anonymous_users_are_redirected_from_configuration_pages(self):
+        paths = (
+            reverse("rooms:index"),
+            reverse("rooms:hostel_create"),
+            reverse("rooms:hostel_edit", args=[self.hostel.pk]),
+            reverse("rooms:hostel_deactivate", args=[self.hostel.pk]),
+            reverse("rooms:room_create"),
+            reverse("rooms:room_edit", args=[1]),
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 302)
+                self.assertIn(reverse("accounts:login"), response["Location"])
+
+    def test_warden_can_view_assigned_configuration_but_not_other_hostels(self):
+        self.hostel.wardens.add(self.warden)
+        Hostel.objects.create(name="South Hall", gender_type="F")
+        self.login(self.warden)
+        response = self.client.get(reverse("rooms:index"))
+        self.assertContains(response, "North Hall")
+        self.assertNotContains(response, "South Hall")
+        self.assertEqual(response.context["hostels"].count(), 1)
+        self.assertEqual(response.context["rooms"].count(), 0)
