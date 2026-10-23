@@ -35,7 +35,8 @@
       <caption class="visually-hidden">Pending room applications in priority order</caption>
       <thead>
         <tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Name</th><th scope="col">Gender</th>
-            <th scope="col">Year</th><th scope="col">Preferences</th><th scope="col">Group</th><th scope="col">Submitted</th></tr>
+            <th scope="col">Year</th><th scope="col">Preferences</th><th scope="col">Group</th><th scope="col">Submitted</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th></tr>
       </thead>
       <tbody>
         {% for a in page %}
@@ -48,6 +49,7 @@
           <td>{% for p in a.preferences %}{{ forloop.counter }}. {{ p }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
           <td><span class="badge {{ a.badge.1 }}">{{ a.badge.0 }}</span></td>
           <td>{{ a.submitted_at|date:"d-m-Y H:i" }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-brass" href="{% url 'allocation:allocate' a.pk %}">Allocate<span class="visually-hidden"> {{ a.application_no }}</span></a></td>
         </tr>
         {% endfor %}
       </tbody>

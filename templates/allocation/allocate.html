@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Allocate {{ application.application_no }} · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Allocate a bed</h1>
+<p class="page-lede mb-4">Application {{ application.application_no }} &middot; {{ application.academic_year }}</p>
+
+{% if error %}
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="panel h-100">
+      <h2 class="h5">Student</h2>
+      <dl class="row mb-0">
+        <dt class="col-5">SRN</dt><dd class="col-7">{{ student.srn }}</dd>
+        <dt class="col-5">Name</dt><dd class="col-7">{{ student.name }}</dd>
+        <dt class="col-5">Year</dt><dd class="col-7">{{ student.year }}</dd>
+        <dt class="col-5">Gender</dt><dd class="col-7">{{ student.get_gender_display }}</dd>
+        <dt class="col-5">Preferences</dt>
+        <dd class="col-7"><ol class="mb-0 ps-3">{% for p in preferences %}<li>{{ p }}</li>{% endfor %}</ol></dd>
+        <dt class="col-5">Priority flag</dt><dd class="col-7">{% if student.priority_flag %}<span class="badge text-bg-warning">Priority</span>{% else %}No{% endif %}</dd>
+        <dt class="col-5">Roommate</dt><dd class="col-7">{{ application.preferred_roommate_srn|default:"None" }}</dd>
+        <dt class="col-5">Status</dt><dd class="col-7">{{ application.get_status_display }}</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    {% if not pending %}
+      <div class="panel h-100"><p class="mb-0">This application can no longer be allocated.</p></div>
+    {% elif options %}
+      <form method="post" class="panel h-100" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_bed" class="form-label">Vacant bed <span aria-hidden="true">*</span></label>
+          <select name="bed" id="id_bed" class="form-select {% if field_error %}is-invalid{% endif %}" aria-describedby="bed_help" required>
+            <option value="">Choose a bed</option>
+            {% for value, label in options %}<option value="{{ value }}"{% if value == chosen %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <div id="bed_help" class="form-text">Beds in rooms of the student's preferred types are listed first and marked with the preference number.</div>
+          {% if field_error %}<div class="invalid-feedback d-block">{{ field_error }}</div>{% endif %}
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-brass">Allocate (Provisional)</button>
+          <a class="btn btn-outline-secondary" href="{% url 'allocation:queue' %}">Back to queue</a>
+        </div>
+      </form>
+    {% else %}
+      <div class="panel h-100"><p class="mb-0">No vacant beds in your hostels match this student's gender. Rooms under maintenance are not offered.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% if not pending or not options %}<a class="btn btn-outline-secondary mt-3" href="{% url 'allocation:queue' %}">Back to queue</a>{% endif %}
+{% endblock %}
