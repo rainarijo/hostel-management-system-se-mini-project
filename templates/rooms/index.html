@@ -40,6 +40,11 @@
               <button class="btn btn-link p-0 align-baseline text-danger" type="submit"
                       onclick="return confirm('Deactivate {{ hostel.name|escapejs }}?')">Deactivate<span class="visually-hidden"> {{ hostel.name }}</span></button>
             </form>
+            {% else %}
+            <form method="post" action="{% url 'rooms:hostel_reactivate' hostel.pk %}" class="d-inline ms-2">
+              {% csrf_token %}
+              <button class="btn btn-link p-0 align-baseline" type="submit">Reactivate<span class="visually-hidden"> {{ hostel.name }}</span></button>
+            </form>
             {% endif %}
           </td>
           {% endif %}
@@ -62,7 +67,8 @@
       <thead>
         <tr><th scope="col">Hostel</th><th scope="col">Room</th><th scope="col">Floor</th>
             <th scope="col">Type</th><th scope="col">Capacity</th><th scope="col">Annual fee</th>
-            <th scope="col">Status</th>{% if user.role == "ADMIN" %}<th scope="col"><span class="visually-hidden">Actions</span></th>{% endif %}</tr>
+            <th scope="col">Status</th><th scope="col">Active</th>
+            {% if user.role == "ADMIN" %}<th scope="col"><span class="visually-hidden">Actions</span></th>{% endif %}</tr>
       </thead>
       <tbody>
         {% for room in rooms %}
@@ -74,7 +80,24 @@
           <td>{{ room.capacity }}</td>
           <td>INR {{ room.annual_fee|floatformat:2 }}</td>
           <td>{{ room.get_status_display }}</td>
-          {% if user.role == "ADMIN" %}<td class="text-end"><a href="{% url 'rooms:room_edit' room.pk %}">Edit<span class="visually-hidden"> room {{ room.room_no }}</span></a></td>{% endif %}
+          <td>{% if room.is_active %}Active{% else %}Inactive{% endif %}</td>
+          {% if user.role == "ADMIN" %}
+          <td class="text-end text-nowrap">
+            <a href="{% url 'rooms:room_edit' room.pk %}">Edit<span class="visually-hidden"> room {{ room.room_no }}</span></a>
+            {% if room.is_active %}
+            <form method="post" action="{% url 'rooms:room_deactivate' room.pk %}" class="d-inline ms-2">
+              {% csrf_token %}
+              <button class="btn btn-link p-0 align-baseline text-danger" type="submit"
+                      onclick="return confirm('Deactivate room {{ room.room_no|escapejs }}?')">Deactivate<span class="visually-hidden"> room {{ room.room_no }}</span></button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'rooms:room_reactivate' room.pk %}" class="d-inline ms-2">
+              {% csrf_token %}
+              <button class="btn btn-link p-0 align-baseline" type="submit">Reactivate<span class="visually-hidden"> room {{ room.room_no }}</span></button>
+            </form>
+            {% endif %}
+          </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>

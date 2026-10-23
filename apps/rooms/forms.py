@@ -2,7 +2,7 @@ from django import forms
 
 from apps.accounts.models import Role, User
 
-from .models import Hostel, Room
+from .models import Hostel, Room, RoomStatus
 
 
 class BootstrapModelForm(forms.ModelForm):
@@ -44,3 +44,17 @@ class RoomForm(BootstrapModelForm):
             "annual_fee": forms.NumberInput(attrs={"class": "form-control", "min": 0, "max": 500000, "step": "0.01"}),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        capacity = cleaned.get("capacity")
+        status = cleaned.get("status")
+        occupancy = self.instance.occupancy if self.instance.pk else 0
+
+        if capacity is not None and occupancy > capacity:
+            self.add_error("capacity", "Capacity cannot be lower than the room's active occupancy.")
+        if capacity is not None and status == RoomStatus.AVAILABLE and occupancy >= capacity:
+            self.add_error("status", "A room at capacity must be marked Full.")
+        if capacity is not None and status == RoomStatus.FULL and occupancy < capacity:
+            self.add_error("status", "A room with vacant beds cannot be marked Full.")
+        return cleaned
