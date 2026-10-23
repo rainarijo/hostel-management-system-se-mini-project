@@ -1,13 +1,10 @@
-
 from io import BytesIO
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
-
 from apps.accounts.models import Role, User
 from apps.students.models import Gender, StudentProfile
-
 
 PASSWORD = "Strongpass2026"
 
@@ -80,7 +77,7 @@ class StudentProfileTests(TestCase):
                 "blood_group": "A+",
             },
         )
-     
+
         self.assertRedirects(
             response,
             reverse("students:profile_detail", args=[self.profile.pk]),
@@ -91,7 +88,6 @@ class StudentProfileTests(TestCase):
         self.assertEqual(self.profile.permanent_address, "Bengaluru, Karnataka")
         self.assertEqual(self.profile.guardian_name, "Parent One")
         self.assertEqual(self.profile.blood_group, "A+")
-        
 
     def test_student_cannot_edit_another_students_profile(self):
         self.client.force_login(self.student)
