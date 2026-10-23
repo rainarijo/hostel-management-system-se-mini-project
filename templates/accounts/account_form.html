@@ -1,0 +1,12 @@
+
+{% extends "base.html" %}
+{% block title %}Create Privileged Account{% endblock %}
+{% block content %}
+<h1 class="page-title">Create Privileged Account</h1>
+<form method="post" class="panel p-4">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-primary" type="submit">Create account</button>
+  <a class="btn btn-outline-secondary" href="{% url 'accounts:account_list' %}">Cancel</a>
+</form>
+{% endblock %}

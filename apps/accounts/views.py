@@ -13,6 +13,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+
+from apps.core.permissions import role_required
+
+from .models import Role
 from apps.core.audit import log_action
 from apps.students.models import StudentProfile
 
@@ -183,3 +187,135 @@ def password_reset_view(request):
         "coming_soon.html",
         {"feature": "Password reset", "frs": "FR-1.6"},
     )
+
+
+@role_required(Role.ADMIN)
+def account_list_view(request):
+    users = User.objects.all().order_by("email")
+
+    return render(
+        request,
+        "accounts/account_list.html",
+        {
+            "users": users,
+            "role_choices": Role.choices,
+        },
+    )
+
+
+@role_required(Role.ADMIN)
+def account_create_view(request):
+    from .forms import AdminAccountCreateForm
+
+    form = AdminAccountCreateForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        user = User.objects.create_user(
+            email=form.cleaned_data["email"],
+            password=form.cleaned_data["password1"],
+            first_name=form.cleaned_data["first_name"],
+            last_name=form.cleaned_data["last_name"],
+            role=form.cleaned_data["role"],
+            is_active=True,
+        )
+        log_action(
+            "ACCOUNT_CREATED",
+            user=request.user,
+            entity="user",
+            entity_id=user.pk,
+            new=f"{user.email}:{user.role}",
+            request=request,
+        )
+        messages.success(request, "Account created successfully.")
+        return redirect("accounts:account_list")
+
+    return render(
+        request,
+        "accounts/account_form.html",
+        {"form": form},
+    )
+
+
+@require_POST
+@role_required(Role.ADMIN)
+def account_change_role_view(request, user_id):
+    target = User.objects.filter(pk=user_id).first()
+    if target is None:
+        from django.http import Http404
+        raise Http404
+
+    new_role = request.POST.get("role")
+    allowed_roles = {Role.STUDENT, Role.WARDEN, Role.ADMIN}
+
+    if new_role not in allowed_roles:
+        messages.error(request, "Invalid role.")
+        return redirect("accounts:account_list")
+
+    old_role = target.role
+
+    if target.role == Role.ADMIN and new_role != Role.ADMIN:
+        other_active_admins = User.objects.filter(
+            role=Role.ADMIN,
+            is_active=True,
+        ).exclude(pk=target.pk).count()
+        if target.is_active and other_active_admins == 0:
+            messages.error(
+                request,
+                "The last active administrator cannot be demoted.",
+            )
+            return redirect("accounts:account_list")
+
+    target.role = new_role
+    target.save(update_fields=["role"])
+
+    log_action(
+        "ACCOUNT_ROLE_CHANGED",
+        user=request.user,
+        entity="user",
+        entity_id=target.pk,
+        old=old_role,
+        new=new_role,
+        request=request,
+    )
+    messages.success(request, "Account role updated.")
+    return redirect("accounts:account_list")
+
+
+@require_POST
+@role_required(Role.ADMIN)
+def account_deactivate_view(request, user_id):
+    target = User.objects.filter(pk=user_id).first()
+    if target is None:
+        from django.http import Http404
+        raise Http404
+
+    if target.pk == request.user.pk:
+        messages.error(request, "You cannot deactivate your own account.")
+        return redirect("accounts:account_list")
+
+    if target.role == Role.ADMIN and target.is_active:
+        other_active_admins = User.objects.filter(
+            role=Role.ADMIN,
+            is_active=True,
+        ).exclude(pk=target.pk).count()
+        if other_active_admins == 0:
+            messages.error(
+                request,
+                "The last active administrator cannot be deactivated.",
+            )
+            return redirect("accounts:account_list")
+
+    target.is_active = False
+    target.save(update_fields=["is_active"])
+
+    log_action(
+        "ACCOUNT_DEACTIVATED",
+        user=request.user,
+        entity="user",
+        entity_id=target.pk,
+        old="active",
+        new="inactive",
+        request=request,
+    )
+    messages.success(request, "Account deactivated.")
+    return redirect("accounts:account_list")
