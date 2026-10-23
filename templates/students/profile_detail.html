@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Student Profile{% endblock %}
+{% block content %}
+<h1 class="page-title">Student Profile</h1>
+
+<dl class="row">
+  <dt class="col-sm-4">SRN</dt><dd class="col-sm-8">{{ profile.srn }}</dd>
+  <dt class="col-sm-4">Name</dt><dd class="col-sm-8">{{ profile.name }}</dd>
+  <dt class="col-sm-4">Gender</dt><dd class="col-sm-8">{{ profile.get_gender_display }}</dd>
+  <dt class="col-sm-4">Programme</dt><dd class="col-sm-8">{{ profile.program }}</dd>
+  <dt class="col-sm-4">Year</dt><dd class="col-sm-8">{{ profile.year }}</dd>
+  <dt class="col-sm-4">Mobile</dt><dd class="col-sm-8">{{ profile.mobile|default:"—" }}</dd>
+  <dt class="col-sm-4">Personal email</dt><dd class="col-sm-8">{{ profile.personal_email|default:"—" }}</dd>
+  <dt class="col-sm-4">Permanent address</dt><dd class="col-sm-8">{{ profile.permanent_address|default:"—" }}</dd>
+  <dt class="col-sm-4">Guardian</dt><dd class="col-sm-8">{{ profile.guardian_name|default:"—" }}</dd>
+  <dt class="col-sm-4">Guardian relationship</dt><dd class="col-sm-8">{{ profile.guardian_relationship|default:"—" }}</dd>
+  <dt class="col-sm-4">Guardian mobile</dt><dd class="col-sm-8">{{ profile.guardian_mobile|default:"—" }}</dd>
+  <dt class="col-sm-4">Emergency contact</dt><dd class="col-sm-8">{{ profile.emergency_contact_name|default:"—" }}</dd>
+  <dt class="col-sm-4">Emergency mobile</dt><dd class="col-sm-8">{{ profile.emergency_contact_mobile|default:"—" }}</dd>
+  <dt class="col-sm-4">Blood group</dt><dd class="col-sm-8">{{ profile.blood_group|default:"—" }}</dd>
+</dl>
+
+{% if profile.photo %}
+  <img src="{{ profile.photo.url }}" alt="Profile photograph" width="160">
+{% endif %}
+
+<a class="btn btn-primary" href="{% url 'students:profile_edit' profile.pk %}">Edit profile</a>
+{% endblock %}
