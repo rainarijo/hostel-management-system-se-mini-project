@@ -137,3 +137,40 @@ class AdminAccountCreateForm(forms.Form):
             validate_password(password2)
 
         return password2
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        label="Institutional email",
+        widget=forms.EmailInput(attrs={"autocomplete": "email"}),
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+
+class PasswordResetConfirmForm(forms.Form):
+    password1 = forms.CharField(
+        label="New password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+    password2 = forms.CharField(
+        label="Confirm new password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords do not match.")
+
+        if password2:
+            validate_password(password2, user=self.user)
+
+        return password2

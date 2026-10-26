@@ -13,7 +13,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from django.core.cache import cache
+from django.contrib.auth.password_validation import validate_password
+from django.views.decorators.http import require_http_methods
 
+from .forms import PasswordResetRequestForm, PasswordResetConfirmForm
 from apps.core.permissions import role_required
 
 from .models import Role
@@ -180,12 +184,163 @@ def verify_email_view(request, token):
     return redirect("accounts:login")
 
 
+
 def password_reset_view(request):
-    """FR-1.6: password reset by e-mail link. Sprint 1 story."""
+    """FR-1.6 / SEC-REQ-7: request a one-time password reset."""
+    form = PasswordResetRequestForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+
+        # Rate-limit by normalized email, including unknown addresses.
+        email_hash = hashlib.sha256(email.encode("utf-8")).hexdigest()
+        cache_key = f"password-reset-rate:{email_hash}"
+
+        try:
+            cache.add(cache_key, 0, timeout=3600)
+            request_count = cache.incr(cache_key)
+        except ValueError:
+            # Defensive fallback if the cache entry disappears.
+            cache.set(cache_key, 1, timeout=3600)
+            request_count = 1
+
+        if request_count <= 5:
+            user = User.objects.filter(
+                email__iexact=email,
+                is_active=True,
+            ).first()
+
+            if user:
+                raw_token = secrets.token_urlsafe(32)
+                token_hash = hashlib.sha256(
+                    raw_token.encode("utf-8")
+                ).hexdigest()
+                now = timezone.now()
+
+                # Invalidate older unused reset links for this account.
+                AuthToken.objects.filter(
+                    user=user,
+                    purpose=TokenPurpose.RESET,
+                    used_at__isnull=True,
+                ).update(used_at=now)
+
+                AuthToken.objects.create(
+                    user=user,
+                    purpose=TokenPurpose.RESET,
+                    token_hash=token_hash,
+                    expires_at=now + timedelta(minutes=30),
+                )
+
+                reset_url = request.build_absolute_uri(
+                    reverse(
+                        "accounts:password_reset_confirm",
+                        args=[raw_token],
+                    )
+                )
+
+                send_mail(
+                    subject="Reset your Hostel Management System password",
+                    message=(
+                        "A password reset was requested for your account.\n\n"
+                        f"Use this one-time link within 30 minutes:\n{reset_url}\n\n"
+                        "If you did not request this, you can ignore this email."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+
+        # Same response for existing and unknown email addresses.
+        messages.success(
+            request,
+            "If an active account exists for that email, "
+            "a password-reset link will be sent.",
+        )
+        return redirect("accounts:password_reset")
+
     return render(
         request,
-        "coming_soon.html",
-        {"feature": "Password reset", "frs": "FR-1.6"},
+        "accounts/password_reset.html",
+        {"form": form},
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def password_reset_confirm_view(request, token):
+    """Validate a one-time token and set a new password."""
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    now = timezone.now()
+
+    auth_token = (
+        AuthToken.objects.select_related("user")
+        .filter(
+            token_hash=token_hash,
+            purpose=TokenPurpose.RESET,
+            used_at__isnull=True,
+            expires_at__gt=now,
+            user__is_active=True,
+        )
+        .first()
+    )
+
+    if auth_token is None:
+        return render(
+            request,
+            "accounts/password_reset_invalid.html",
+            status=400,
+        )
+
+    form = PasswordResetConfirmForm(
+        request.POST or None,
+        user=auth_token.user,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        # Recheck and consume the token atomically to prevent reuse.
+        with transaction.atomic():
+            locked_token = (
+                AuthToken.objects.select_for_update()
+                .select_related("user")
+                .filter(
+                    pk=auth_token.pk,
+                    used_at__isnull=True,
+                    expires_at__gt=timezone.now(),
+                    purpose=TokenPurpose.RESET,
+                    user__is_active=True,
+                )
+                .first()
+            )
+
+            if locked_token is None:
+                return render(
+                    request,
+                    "accounts/password_reset_invalid.html",
+                    status=400,
+                )
+
+            locked_token.user.set_password(form.cleaned_data["password1"])
+            locked_token.user.save(update_fields=["password"])
+
+            locked_token.used_at = timezone.now()
+            locked_token.save(update_fields=["used_at"])
+
+            # Invalidate every other outstanding reset link for this user.
+            AuthToken.objects.filter(
+                user=locked_token.user,
+                purpose=TokenPurpose.RESET,
+                used_at__isnull=True,
+            ).update(used_at=timezone.now())
+
+        messages.success(
+            request,
+            "Your password has been reset. Please log in.",
+        )
+        return redirect("accounts:login")
+
+    return render(
+        request,
+        "accounts/password_reset_confirm.html",
+        {"form": form},
     )
 
 
