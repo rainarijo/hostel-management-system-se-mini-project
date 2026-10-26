@@ -1,9 +1,6 @@
 
 import hashlib
 from datetime import timedelta
-from urllib.parse import urlparse, parse_qs
-
-from django.conf import settings
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase, override_settings

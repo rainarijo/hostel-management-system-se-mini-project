@@ -32,8 +32,8 @@ urlpatterns = [
         name="account_deactivate",
     ),
     path(
-    "password-reset/<str:token>/",
-    views.password_reset_confirm_view,
-    name="password_reset_confirm",
-),
+        "password-reset/<str:token>/",
+        views.password_reset_confirm_view,
+        name="password_reset_confirm",
+    ),
 ]

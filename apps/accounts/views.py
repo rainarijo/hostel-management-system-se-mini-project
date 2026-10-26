@@ -14,7 +14,6 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from django.core.cache import cache
-from django.contrib.auth.password_validation import validate_password
 from django.views.decorators.http import require_http_methods
 
 from .forms import PasswordResetRequestForm, PasswordResetConfirmForm
@@ -182,7 +181,6 @@ def verify_email_view(request, token):
         "Your email has been verified. You can now log in.",
     )
     return redirect("accounts:login")
-
 
 
 def password_reset_view(request):
