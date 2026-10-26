@@ -16,4 +16,5 @@ urlpatterns = [
         views.profile_edit,
         name="profile_edit",
     ),
+    path("search/", views.search, name="search"),
 ]
