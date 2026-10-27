@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Student Search{% endblock %}
+{% block content %}
+<h1 class="page-title">Student Search</h1>
+
+<form method="get" class="mb-4">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label for="q" class="form-label">SRN or student name</label>
+      <input
+        id="q"
+        name="q"
+        class="form-control"
+        value="{{ query }}"
+        placeholder="Search SRN or name"
+      >
+    </div>
+
+    <div class="col-md-3">
+      <label for="hostel" class="form-label">Hostel</label>
+      <select id="hostel" name="hostel" class="form-select">
+        <option value="">All authorized hostels</option>
+        {% for hostel in hostels %}
+          <option
+            value="{{ hostel.pk }}"
+            {% if selected_hostel == hostel.pk|stringformat:"s" %}selected{% endif %}
+          >
+            {{ hostel.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label for="room" class="form-label">Room number</label>
+      <input
+        id="room"
+        name="room"
+        class="form-control"
+        value="{{ room_no }}"
+      >
+    </div>
+
+    <div class="col-md-2">
+      <label for="year" class="form-label">Study year</label>
+      <select id="year" name="year" class="form-select">
+        <option value="">All years</option>
+        {% for option in "1234" %}
+          <option
+            value="{{ option }}"
+            {% if year == option %}selected{% endif %}
+          >
+            Year {{ option }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-1 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>SRN</th>
+        <th>Name</th>
+        <th>Hostel</th>
+        <th>Room</th>
+        <th>Mobile</th>
+        <th>Guardian mobile</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for result in results %}
+        {% with profile=result.profile %}
+          <tr>
+            <td>{{ profile.srn }}</td>
+            <td>{{ profile.name }}</td>
+
+            <td>
+              {% for allocation in result.allocations %}
+                {{ allocation.room.hostel.name }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                —
+              {% endfor %}
+            </td>
+
+            <td>
+              {% for allocation in result.allocations %}
+                {{ allocation.room.room_no }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                —
+              {% endfor %}
+            </td>
+
+            <td>{{ profile.mobile|default:"—" }}</td>
+            <td>{{ profile.guardian_mobile|default:"—" }}</td>
+          </tr>
+        {% endwith %}
+      {% empty %}
+        <tr>
+          <td colspan="6">No student profiles found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

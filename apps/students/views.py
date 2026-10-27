@@ -7,7 +7,10 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.models import Role
 from apps.core.audit import log_action
 from apps.core.permissions import role_required
+from django.db.models import Q
 
+from apps.allocation.models import Allocation, AllocationStatus
+from apps.rooms.models import Hostel
 from .forms import StudentProfileForm
 from .models import StudentProfile
 
@@ -36,6 +39,81 @@ def index(request):
         "feature": "Student profiles",
         "frs": "FR-2.1 - FR-2.2",
     })
+
+
+@login_required
+@role_required(Role.WARDEN, Role.ADMIN)
+def search(request):
+    """FR-2.5, FR-2.6: search within the actor's authorized scope."""
+    query = request.GET.get("q", "").strip()
+    hostel_id = request.GET.get("hostel", "").strip()
+    room_no = request.GET.get("room", "").strip()
+    year = request.GET.get("year", "").strip()
+
+    if request.user.role == Role.WARDEN:
+        hostels = request.user.hostels.filter(is_active=True)
+    else:
+        hostels = Hostel.objects.filter(is_active=True)
+
+    allocations = Allocation.objects.filter(
+        room__hostel__in=hostels,
+        status__in=[
+            AllocationStatus.PROVISIONAL,
+            AllocationStatus.CONFIRMED,
+        ],
+    ).select_related("room", "room__hostel")
+
+    if hostel_id:
+        if not hostel_id.isdigit():
+            allocations = allocations.none()
+        else:
+            allocations = allocations.filter(
+                room__hostel_id=int(hostel_id)
+            )
+
+    if room_no:
+        allocations = allocations.filter(
+            room__room_no__icontains=room_no
+        )
+
+    profiles = StudentProfile.objects.select_related("user")
+
+    if request.user.role == Role.WARDEN or hostel_id or room_no:
+        profiles = profiles.filter(
+            pk__in=allocations.values("student_id")
+        )
+
+    if query:
+        profiles = profiles.filter(
+            Q(srn__icontains=query) | Q(name__icontains=query)
+        )
+
+    if year.isdigit():
+        profiles = profiles.filter(year=int(year))
+
+    profiles = profiles.distinct().order_by("srn")
+    # Build rows with only allocations in the authorized scope.
+    results = []
+    for profile in profiles:
+        results.append({
+            "profile": profile,
+            "allocations": list(
+                allocations.filter(student_id=profile.pk)
+            ),
+        })
+
+    return render(
+        request,
+        "students/search.html",
+        {
+            "results": results,
+            "query": query,
+            "hostels": hostels,
+            "selected_hostel": hostel_id,
+            "room_no": room_no,
+            "year": year,
+        },
+    )
 
 
 @login_required

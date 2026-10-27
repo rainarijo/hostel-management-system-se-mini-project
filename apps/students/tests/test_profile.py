@@ -5,7 +5,9 @@ from django.test import TestCase
 from django.urls import reverse
 from apps.accounts.models import Role, User
 from apps.students.models import Gender, StudentProfile
-
+from datetime import date
+from apps.allocation.models import Allocation, AllocationStatus
+from apps.rooms.models import Hostel, Room, RoomType
 PASSWORD = "Strongpass2026"
 
 
@@ -242,3 +244,155 @@ class StudentProfileTests(TestCase):
         self.profile.refresh_from_db()
         self.assertTrue(self.profile.photo)
         self.assertTrue(self.profile.photo.name.startswith("photos/"))
+
+
+class StudentSearchTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email="searchadmin@hms.local",
+            password=PASSWORD,
+            role=Role.ADMIN,
+        )
+        self.warden_a = User.objects.create_user(
+            email="searchwarden1@hms.local",
+            password=PASSWORD,
+            role=Role.WARDEN,
+        )
+        self.warden_b = User.objects.create_user(
+            email="searchwarden2@hms.local",
+            password=PASSWORD,
+            role=Role.WARDEN,
+        )
+
+        self.hostel_a = Hostel.objects.create(
+            name="Search Hostel A",
+            gender_type=Gender.MALE,
+        )
+        self.hostel_a.wardens.add(self.warden_a)
+
+        self.hostel_b = Hostel.objects.create(
+            name="Search Hostel B",
+            gender_type=Gender.FEMALE,
+        )
+        self.hostel_b.wardens.add(self.warden_b)
+
+        self.room_a = Room.objects.create(
+            hostel=self.hostel_a,
+            room_no="A101",
+            floor=1,
+            room_type=RoomType.DOUBLE,
+            capacity=2,
+            annual_fee="50000.00",
+        )
+        self.room_b = Room.objects.create(
+            hostel=self.hostel_b,
+            room_no="B202",
+            floor=2,
+            room_type=RoomType.DOUBLE,
+            capacity=2,
+            annual_fee="50000.00",
+        )
+
+        self.student_a = User.objects.create_user(
+            email="searchstudent1@hms.local",
+            password=PASSWORD,
+            role=Role.STUDENT,
+        )
+        self.student_b = User.objects.create_user(
+            email="searchstudent2@hms.local",
+            password=PASSWORD,
+            role=Role.STUDENT,
+        )
+
+        self.profile_a = StudentProfile.objects.create(
+            user=self.student_a,
+            srn="PES1UG26CS101",
+            name="Alice Search",
+            gender=Gender.MALE,
+            program="CSE",
+            year=2,
+            mobile="9876543210",
+            guardian_mobile="9876543211",
+        )
+        self.profile_b = StudentProfile.objects.create(
+            user=self.student_b,
+            srn="PES1UG26CS202",
+            name="Bob Search",
+            gender=Gender.FEMALE,
+            program="ECE",
+            year=1,
+            mobile="9876543220",
+            guardian_mobile="9876543221",
+        )
+
+        Allocation.objects.create(
+            student=self.profile_a,
+            room=self.room_a,
+            bed_no=1,
+            academic_year="2026-2027",
+            start_date=date(2026, 6, 1),
+            status=AllocationStatus.CONFIRMED,
+        )
+        Allocation.objects.create(
+            student=self.profile_b,
+            room=self.room_b,
+            bed_no=1,
+            academic_year="2026-2027",
+            start_date=date(2026, 6, 1),
+            status=AllocationStatus.CONFIRMED,
+        )
+
+    def test_admin_can_search_by_partial_srn(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(
+            reverse("students:search"),
+            {"q": "CS101"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "PES1UG26CS101")
+        self.assertNotContains(response, "PES1UG26CS202")
+
+    def test_admin_can_search_name_case_insensitively(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(
+            reverse("students:search"),
+            {"q": "ALICE"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alice Search")
+        self.assertNotContains(response, "Bob Search")
+
+    def test_warden_only_sees_students_in_assigned_hostels(self):
+        self.client.force_login(self.warden_a)
+
+        response = self.client.get(reverse("students:search"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alice Search")
+        self.assertNotContains(response, "Bob Search")
+        self.assertContains(response, "Search Hostel A")
+        self.assertNotContains(response, "Search Hostel B")
+
+    def test_warden_cannot_filter_into_another_hostel(self):
+        self.client.force_login(self.warden_a)
+
+        response = self.client.get(
+            reverse("students:search"),
+            {"hostel": str(self.hostel_b.pk)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Alice Search")
+        self.assertNotContains(response, "Bob Search")
+
+    def test_warden_sees_only_authorized_room_details(self):
+        self.client.force_login(self.warden_a)
+
+        response = self.client.get(reverse("students:search"))
+
+        self.assertContains(response, "A101")
+        self.assertNotContains(response, "B202")
