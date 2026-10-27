@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Reject {{ application.application_no }} · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Reject application</h1>
+<p class="page-lede mb-4">{{ application.application_no }} &middot; {{ student.name }} ({{ student.srn }}) &middot; {{ application.get_status_display }}</p>
+
+{% if error %}
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endif %}
+
+{% if pending %}
+<form method="post" action="{% url 'allocation:reject' application.pk %}" class="panel login-wrap" novalidate>
+  {% csrf_token %}
+  <div class="mb-3">
+    <label for="id_reason" class="form-label">Reason <span aria-hidden="true">*</span></label>
+    <textarea name="reason" id="id_reason" rows="3" maxlength="300" aria-describedby="reason_help"
+              class="form-control {% if field_error %}is-invalid{% endif %}" required autofocus>{{ reason }}</textarea>
+    <div id="reason_help" class="form-text">At least 10 characters. The student is e-mailed this reason.</div>
+    {% if field_error %}<div class="invalid-feedback d-block">{{ field_error }}</div>{% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-danger">Reject application</button>
+    <a class="btn btn-outline-secondary" href="{% url 'allocation:queue' %}">Cancel</a>
+  </div>
+</form>
+{% else %}
+<a class="btn btn-outline-secondary" href="{% url 'allocation:queue' %}">Back to queue</a>
+{% endif %}
+{% endblock %}

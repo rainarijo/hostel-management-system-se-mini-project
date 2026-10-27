@@ -4,6 +4,7 @@ from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.accounts.models import Role
 from apps.core.audit import log_action
@@ -14,7 +15,7 @@ from apps.rooms.models import Room, RoomType
 
 from .forms import ApplicationForm, ApplicationWindowForm
 from .models import ApplicationStatus, ApplicationWindow, RoomApplication
-from .services import (GROUP_PRIORITY, GROUP_YEAR_1, allocate, candidate_beds, get_open_window, list_pending,
+from .services import (GROUP_PRIORITY, GROUP_YEAR_1, allocate, candidate_beds, get_open_window, list_pending, reject,
                        scoped_applications, submit_application, vacancy_by_room_type, window_status)
 
 YEAR_CHOICES = (1, 2, 3, 4)
@@ -103,8 +104,11 @@ def application_detail(request, application_no):
     application = get_object_or_404(RoomApplication, application_no=application_no, student__user=request.user)
     preferences = [getattr(application, f"get_preference_{n}_display")() for n in (1, 2, 3)
                    if getattr(application, f"preference_{n}")]
+    allocation = None
+    if application.status == ApplicationStatus.ALLOCATED:      # FR-4.9: show Provisional / Confirmed
+        allocation = application.allocation_set.select_related("room__hostel").first()
     return render(request, "allocation/application_detail.html",
-                  {"application": application, "preferences": preferences})
+                  {"application": application, "preferences": preferences, "allocation": allocation})
 
 
 @role_required(Role.WARDEN, Role.ADMIN)
@@ -178,4 +182,31 @@ def allocate_view(request, pk):
         "chosen": chosen, "pending": application.status == ApplicationStatus.PENDING,
         "preferences": [RoomType(p).label for p in _preferences(application)],
         "options": _bed_options(application, request.user) if application.status == ApplicationStatus.PENDING else [],
+    }, status=status)
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+@require_POST
+def reject_view(request, pk):
+    """FR-4.8: reject a pending application with a reason (posted from the confirmation modal)."""
+    application = get_object_or_404(scoped_applications(request.user).select_related("student"), pk=pk)
+    reason = request.POST.get("reason", "")
+    error, field_error, status = None, None, 200
+    try:
+        reject(application, reason, request.user)
+    except ObjectNotFound:
+        raise Http404
+    except AccessDenied:
+        raise PermissionDenied
+    except BusinessRuleViolation as exc:
+        error, status = exc.message, 409
+    except ValidationFailure as exc:
+        field_error = exc.message
+    else:
+        messages.success(request, f"Application {application.application_no} rejected.")
+        return redirect("allocation:queue")
+    application.refresh_from_db()
+    return render(request, "allocation/reject.html", {
+        "application": application, "student": application.student, "reason": reason,
+        "error": error, "field_error": field_error, "pending": application.status == ApplicationStatus.PENDING,
     }, status=status)

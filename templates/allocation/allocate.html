@@ -50,5 +50,11 @@
     {% endif %}
   </div>
 </div>
-{% if not pending or not options %}<a class="btn btn-outline-secondary mt-3" href="{% url 'allocation:queue' %}">Back to queue</a>{% endif %}
+<div class="d-flex gap-2 mt-3">
+  {% if not pending or not options %}<a class="btn btn-outline-secondary" href="{% url 'allocation:queue' %}">Back to queue</a>{% endif %}
+  {% if pending %}
+    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reject-{{ application.pk }}">Reject application</button>
+  {% endif %}
+</div>
+{% if pending %}{% include "allocation/_reject_modal.html" %}{% endif %}
 {% endblock %}

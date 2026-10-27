@@ -1,0 +1,23 @@
+{# UI-4 confirmation modal for FR-4.8. Needs: application. #}
+<div class="modal fade" id="reject-{{ application.pk }}" tabindex="-1" aria-labelledby="reject-{{ application.pk }}-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="{% url 'allocation:reject' application.pk %}" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="reject-{{ application.pk }}-title">Reject {{ application.application_no }}?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-start">
+        <p>{{ application.student.name }} ({{ application.student.srn }}) will be e-mailed the reason. This cannot be undone.</p>
+        <label for="reason-{{ application.pk }}" class="form-label">Reason <span aria-hidden="true">*</span></label>
+        <textarea name="reason" id="reason-{{ application.pk }}" class="form-control" rows="3" minlength="10" maxlength="300"
+                  aria-describedby="reason-{{ application.pk }}-help" required></textarea>
+        <div id="reason-{{ application.pk }}-help" class="form-text">At least 10 characters.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Reject application</button>
+      </div>
+    </form>
+  </div>
+</div>

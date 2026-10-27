@@ -11,8 +11,16 @@
     <dd class="col-sm-8"><ol class="mb-0 ps-3">{% for p in preferences %}<li>{{ p }}</li>{% endfor %}</ol></dd>
     <dt class="col-sm-4">Preferred roommate</dt><dd class="col-sm-8">{{ application.preferred_roommate_srn|default:"None" }}</dd>
     <dt class="col-sm-4">Status</dt><dd class="col-sm-8">{{ application.get_status_display }}</dd>
-    {% if application.rejection_reason %}
+    {% if application.status == "REJECTED" and application.rejection_reason %}
       <dt class="col-sm-4">Reason</dt><dd class="col-sm-8">{{ application.rejection_reason }}</dd>
+    {% endif %}
+    {% if allocation %}
+      <dt class="col-sm-4">Hostel</dt><dd class="col-sm-8">{{ allocation.room.hostel.name }}</dd>
+      <dt class="col-sm-4">Room</dt><dd class="col-sm-8">{{ allocation.room.room_no }}</dd>
+      <dt class="col-sm-4">Bed</dt><dd class="col-sm-8">{{ allocation.bed_no }}</dd>
+      <dt class="col-sm-4">Allocation status</dt>
+      <dd class="col-sm-8"><span class="badge {% if allocation.status == 'CONFIRMED' %}text-bg-success{% else %}text-bg-warning{% endif %}">{{ allocation.get_status_display }}</span>
+        {% if allocation.status == "PROVISIONAL" %}<span class="small text-body-secondary">Confirmed once your fee is fully paid.</span>{% endif %}</dd>
     {% endif %}
     <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">{{ application.submitted_at|date:"d-m-Y" }}</dd>
   </dl>
