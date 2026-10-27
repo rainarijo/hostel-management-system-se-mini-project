@@ -8,9 +8,10 @@ from django.utils import timezone
 from apps.accounts.models import Role
 from apps.core.audit import log_action
 from apps.core.exceptions import (AccessDenied, AlreadyAllocated, BedUnavailable, BusinessRuleViolation,
-                                  DuplicateApplication, GenderMismatch, ObjectNotFound, ProfileIncomplete,
-                                  RoomUnderMaintenance, ValidationFailure, WindowClosed)
+                                  DuplicateApplication, GenderMismatch, InvalidTransition, ObjectNotFound,
+                                  ProfileIncomplete, RoomUnderMaintenance, ValidationFailure, WindowClosed)
 from apps.core.sequences import next_number
+from apps.notifications.services import APPLICATION_ALLOCATED, APPLICATION_REJECTED, enqueue
 from apps.rooms.models import Hostel, Room, RoomStatus, RoomType
 
 from .models import (ACTIVE_STATUSES, Allocation, AllocationStatus, ApplicationStatus, ApplicationWindow,
@@ -200,5 +201,50 @@ def allocate(application, room, bed_no, actor):
         allocation_created.send(sender=Allocation, allocation=allocation)
         log_action("ALLOCATE", user=actor, entity="allocation", entity_id=allocation.pk, old="application PENDING",
                    new=f"{room} bed {bed_no} {AllocationStatus.PROVISIONAL.label}")
-        # TODO(#6/#30): enqueue APPLICATION_ALLOCATED notification
+        # FR-4.10: queued in this transaction, so a rollback removes it.
+        enqueue(APPLICATION_ALLOCATED, student.user.email, application.application_no, {
+            "application_no": application.application_no, "hostel": room.hostel.name, "room": room.room_no,
+            "bed": bed_no, "status": AllocationStatus.PROVISIONAL.label})
+    return allocation
+
+
+def reject(application, reason, actor):
+    """FR-4.8: reject a pending application with a reason of at least 10 characters."""
+    with transaction.atomic():
+        if not scoped_applications(actor).filter(pk=application.pk).exists():   # AccessDenied for non-staff
+            raise ObjectNotFound()
+        application = RoomApplication.objects.select_for_update().select_related("student__user").get(
+            pk=application.pk)
+        if application.status != ApplicationStatus.PENDING:
+            raise BusinessRuleViolation("This application is no longer pending.")
+        reason = (reason or "").strip()
+        if len(reason) < 10:
+            raise ValidationFailure("Enter a reason of at least 10 characters.")
+        if len(reason) > RoomApplication._meta.get_field("rejection_reason").max_length:
+            raise ValidationFailure("Keep the reason to 300 characters or fewer.")
+
+        application.status = ApplicationStatus.REJECTED
+        application.rejection_reason = reason
+        application.save(update_fields=["status", "rejection_reason", "updated_at"])
+        log_action("REJECT", user=actor, entity="application", entity_id=application.pk,
+                   old="application PENDING", new="application REJECTED")
+        enqueue(APPLICATION_REJECTED, application.student.user.email, application.application_no, {
+            "application_no": application.application_no, "academic_year": application.academic_year,
+            "reason": reason})
+    return application
+
+
+def confirm(allocation):
+    """FR-4.9: Provisional -> Confirmed.
+
+    Called only by the fees service when the allocation's fee record becomes Paid (FR-7.3, issue #29).
+    """
+    with transaction.atomic():
+        allocation = Allocation.objects.select_for_update().get(pk=allocation.pk)
+        if allocation.status != AllocationStatus.PROVISIONAL:
+            raise InvalidTransition()
+        allocation.status = AllocationStatus.CONFIRMED
+        allocation.save(update_fields=["status", "updated_at"])
+        log_action("CONFIRM", entity="allocation", entity_id=allocation.pk,
+                   old=AllocationStatus.PROVISIONAL.label, new=AllocationStatus.CONFIRMED.label)
     return allocation

@@ -10,6 +10,7 @@ urlpatterns = [
     path("applications/apply/", views.apply, name="apply"),
     path("applications/queue/", views.queue, name="queue"),
     path("applications/<int:pk>/allocate/", views.allocate_view, name="allocate"),
+    path("applications/<int:pk>/reject/", views.reject_view, name="reject"),
     path("applications/<str:application_no>/", views.application_detail, name="application_detail"),
     path("manage/windows/", views.window_list, name="window_list"),
     path("manage/windows/new/", views.window_create, name="window_create"),

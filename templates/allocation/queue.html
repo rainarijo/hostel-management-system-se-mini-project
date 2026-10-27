@@ -49,11 +49,15 @@
           <td>{% for p in a.preferences %}{{ forloop.counter }}. {{ p }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
           <td><span class="badge {{ a.badge.1 }}">{{ a.badge.0 }}</span></td>
           <td>{{ a.submitted_at|date:"d-m-Y H:i" }}</td>
-          <td class="text-end"><a class="btn btn-sm btn-brass" href="{% url 'allocation:allocate' a.pk %}">Allocate<span class="visually-hidden"> {{ a.application_no }}</span></a></td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-brass" href="{% url 'allocation:allocate' a.pk %}">Allocate<span class="visually-hidden"> {{ a.application_no }}</span></a>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reject-{{ a.pk }}">Reject<span class="visually-hidden"> {{ a.application_no }}</span></button>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+    {% for a in page %}{% include "allocation/_reject_modal.html" with application=a %}{% endfor %}
   </div>
   {% if page.has_other_pages %}
   <nav aria-label="Queue pages" class="mt-3">

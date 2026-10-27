@@ -53,6 +53,10 @@ class DuplicateApplication(BusinessRuleViolation):
     message = "You have already applied for this academic year."
 
 
+class InvalidTransition(BusinessRuleViolation):
+    message = "This status change is not allowed."
+
+
 class ProfileIncomplete(BusinessRuleViolation):
     message = "Complete your profile before applying."
 
