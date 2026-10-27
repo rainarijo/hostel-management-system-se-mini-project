@@ -11,6 +11,20 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+class AuditLogQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValueError("Audit log entries are append-only.")
+
+    def delete(self):
+        raise ValueError("Audit log entries are append-only.")
+
+    def purge_expired(self):
+        """Delete audit records older than the retention cutoff."""
+        from django.db import models
+
+        return models.QuerySet.delete(self)
+
+
 class AuditLog(models.Model):
     """Append-only audit trail (SEC-REQ-8, FR-2.7). Never update or delete rows."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
@@ -21,6 +35,7 @@ class AuditLog(models.Model):
     new_value = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    objects = AuditLogQuerySet.as_manager()
 
     class Meta:
         ordering = ["-timestamp"]
@@ -32,6 +47,9 @@ class AuditLog(models.Model):
         if self.pk:
             raise ValueError("Audit log entries are append-only.")
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("Audit log entries are append-only.")
 
 
 class DocumentSequence(models.Model):

@@ -142,3 +142,14 @@ class RegistrationTests(TestCase):
         self.assertRedirects(response, reverse("accounts:login"))
         self.assertFalse(user.is_active)
         self.assertIsNotNone(response.wsgi_request._messages)
+
+    def test_password_containing_srn_is_rejected(self):
+        self.data["password1"] = "PES1UG24CS999Strong2026!"
+        self.data["password2"] = "PES1UG24CS999Strong2026!"
+
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            User.objects.filter(email=self.student.email).exists()
+        )

@@ -1,14 +1,13 @@
 
 import hashlib
-from datetime import timedelta
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-
+from apps.students.models import StudentProfile
 from apps.accounts.models import AuthToken, TokenPurpose, User
-
+from datetime import timedelta
 
 PASSWORD = "Strongpass2026"
 
@@ -133,6 +132,31 @@ class PasswordResetTests(TestCase):
             {
                 "password1": "FirstStrong2026",
                 "password2": "SecondStrong2026",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(PASSWORD))
+
+    def test_password_containing_srn_is_rejected_on_reset(self):
+        self.request_reset(self.user.email)
+        token = self.get_token_from_email()
+
+        StudentProfile.objects.create(
+            user=self.user,
+            srn="PES1UG24CS999",
+            name="Reset Student",
+            gender="M",
+            program="CSE",
+            year=2,
+        )
+
+        response = self.client.post(
+            reverse("accounts:password_reset_confirm", args=[token]),
+            {
+                "password1": "PES1UG24CS999Strong2026!",
+                "password2": "PES1UG24CS999Strong2026!",
             },
         )
 
