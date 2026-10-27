@@ -6,6 +6,7 @@ from django.urls import reverse
 from apps.accounts.models import Role, User
 from apps.students.models import Gender, StudentProfile
 from datetime import date
+from apps.core.models import AuditLog
 from apps.allocation.models import Allocation, AllocationStatus
 from apps.rooms.models import Hostel, Room, RoomType
 PASSWORD = "Strongpass2026"
@@ -244,6 +245,70 @@ class StudentProfileTests(TestCase):
         self.profile.refresh_from_db()
         self.assertTrue(self.profile.photo)
         self.assertTrue(self.profile.photo.name.startswith("photos/"))
+
+    def test_profile_edit_audits_each_changed_field(self):
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse("students:profile_edit", args=[self.profile.pk]),
+            {
+                "mobile": "9876543210",
+                "personal_email": "",
+                "permanent_address": "Bengaluru, Karnataka",
+                "guardian_name": "",
+                "guardian_relationship": "",
+                "guardian_mobile": "9876543211",
+                "emergency_contact_name": "",
+                "emergency_contact_mobile": "9876543212",
+                "blood_group": "",
+            }
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        entries = AuditLog.objects.filter(
+            action="STUDENT_PROFILE_FIELD_UPDATED",
+            entity="student_profile",
+            entity_id=str(self.profile.pk),
+        )
+
+        self.assertTrue(
+            entries.filter(
+                old_value="mobile: [redacted]",
+                new_value="mobile: [redacted]",
+                user=self.student,
+            ).exists()
+        )
+        self.assertEqual(entries.count(), 4)
+
+    def test_unchanged_profile_fields_are_not_audited(self):
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse("students:profile_edit", args=[self.profile.pk]),
+            {
+                "mobile": "",
+                "personal_email": "",
+                "permanent_address": "",
+                "guardian_name": "",
+                "guardian_relationship": "",
+                "guardian_mobile": "",
+                "emergency_contact_name": "",
+                "emergency_contact_mobile": "",
+                "blood_group": "",
+            },
+        )
+
+        # The blank address and contact fields are invalid under the
+        # current form validators, so the profile should not be saved.
+        self.assertEqual(response.status_code, 200)
+
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action="STUDENT_PROFILE_FIELD_UPDATED",
+                entity_id=str(self.profile.pk),
+            ).exists()
+        )
 
 
 class StudentSearchTests(TestCase):

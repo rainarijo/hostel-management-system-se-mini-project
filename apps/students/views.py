@@ -172,6 +172,17 @@ def profile_edit(request, profile_id):
         is_admin=is_admin,
     )
 
+    sensitive_profile_fields = {
+        "mobile",
+        "personal_email",
+        "permanent_address",
+        "guardian_name",
+        "guardian_mobile",
+        "emergency_contact_name",
+        "emergency_contact_mobile",
+        "srn",
+    }
+
     if request.method == "POST" and form.is_valid():
         updated_profile = form.save()
 
@@ -181,15 +192,38 @@ def profile_edit(request, profile_id):
             if str(getattr(updated_profile, field)) != old_value
         ]
 
-        log_action(
-            "STUDENT_PROFILE_UPDATED",
-            user=request.user,
-            entity="student_profile",
-            entity_id=profile.pk,
-            old=", ".join(changed_fields),
-            new=", ".join(changed_fields),
-            request=request,
-        )
+        sensitive_profile_fields = {
+            "mobile",
+            "personal_email",
+            "permanent_address",
+            "guardian_name",
+            "guardian_mobile",
+            "emergency_contact_name",
+            "emergency_contact_mobile",
+            "srn",
+        }
+
+        for field in changed_fields:
+            old_value = old_values[field]
+            new_value = str(getattr(updated_profile, field))
+
+            if field == "photo":
+                old_value = "[photo set]" if old_value else "[no photo]"
+                new_value = "[photo set]" if new_value else "[no photo]"
+            elif field in sensitive_profile_fields:
+                old_value = "[redacted]"
+                new_value = "[redacted]"
+
+            log_action(
+                "STUDENT_PROFILE_FIELD_UPDATED",
+                user=request.user,
+                entity="student_profile",
+                entity_id=profile.pk,
+                old=f"{field}: {old_value}",
+                new=f"{field}: {new_value}",
+                request=request,
+            )
+
         messages.success(request, "Profile updated successfully.")
         return redirect(
             "students:profile_detail",

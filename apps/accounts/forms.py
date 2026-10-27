@@ -93,6 +93,12 @@ class RegistrationForm(forms.Form):
         if password2:
             validate_password(password2)
 
+            srn = (self.data.get("srn") or "").strip()
+            if srn and srn.casefold() in password2.casefold():
+                raise forms.ValidationError(
+                    "Password must not contain your student registration number."
+                )
+
         return password2
 
 
@@ -172,5 +178,18 @@ class PasswordResetConfirmForm(forms.Form):
 
         if password2:
             validate_password(password2, user=self.user)
+
+            if self.user:
+                from apps.students.models import StudentProfile
+
+                profile = StudentProfile.objects.filter(
+                    user=self.user
+                ).only("srn").first()
+
+                srn = profile.srn if profile else ""
+                if srn and srn.casefold() in password2.casefold():
+                    raise forms.ValidationError(
+                        "Password must not contain your student registration number."
+                    )
 
         return password2
