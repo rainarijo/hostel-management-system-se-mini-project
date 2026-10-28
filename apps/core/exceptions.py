@@ -57,6 +57,10 @@ class InvalidTransition(BusinessRuleViolation):
     message = "This status change is not allowed."
 
 
+class RunInProgress(BusinessRuleViolation):
+    message = "Auto-Allocate is already running for this hostel."
+
+
 class ProfileIncomplete(BusinessRuleViolation):
     message = "Complete your profile before applying."
 
