@@ -1,6 +1,7 @@
 import re
 
 from django import forms
+from django.utils import timezone
 
 from apps.rooms.models import RoomType
 from apps.students.models import MasterStudent
@@ -102,3 +103,42 @@ class ApplicationForm(forms.Form):
     @property
     def preferences(self):
         return [self.cleaned_data[n] for n in self.PREFERENCE_FIELDS if self.cleaned_data.get(n)]
+
+
+class RoomChangeRequestForm(forms.Form):
+    reason = forms.CharField(
+        label="Reason for room change",
+        min_length=10,
+        max_length=300,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+    )
+
+
+class RoomChangeDecisionForm(forms.Form):
+    reason = forms.CharField(
+        label="Rejection reason",
+        max_length=300,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+    )
+
+
+class RoomChangeApprovalForm(forms.Form):
+    destination_bed = forms.ChoiceField(label="Destination room and bed", widget=forms.Select(
+        attrs={"class": "form-select"}))
+
+    def __init__(self, *args, destination_beds=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["destination_bed"].choices = [("", "Choose a destination bed")] + list(destination_beds)
+
+
+class AllocationCheckOutForm(forms.Form):
+    checkout_date = forms.DateField(
+        label="Check-out date",
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+    )
+
+    def clean_checkout_date(self):
+        checkout_date = self.cleaned_data["checkout_date"]
+        if checkout_date > timezone.localdate():
+            raise forms.ValidationError("Check-out date cannot be in the future.")
+        return checkout_date

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Room change request queue · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Room change request queue</h1>
+<p class="page-lede mb-4">Pending requests for hostels in your management scope.</p>
+<div class="panel">
+  {% if requests %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <caption class="visually-hidden">Pending room change requests</caption>
+        <thead><tr><th scope="col">Student</th><th scope="col">Current room</th><th scope="col">Reason</th>
+          <th scope="col">Submitted</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          {% for item in requests %}
+            <tr>
+              <td>{{ item.student.name }} ({{ item.student.srn }})</td>
+              <td>{{ item.from_allocation.room.hostel.name }}, {{ item.from_allocation.room.room_no }}</td>
+              <td>{{ item.reason }}</td>
+              <td>{{ item.created_at|date:"d-m-Y" }}</td>
+              <td class="text-nowrap">
+                <a class="btn btn-sm btn-brass" href="{% url 'allocation:approve_change_request' item.pk %}">Approve</a>
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'allocation:reject_change_request' item.pk %}">Reject</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="mb-0">There are no pending room change requests in your scope.</p>
+  {% endif %}
+</div>
+{% endblock %}

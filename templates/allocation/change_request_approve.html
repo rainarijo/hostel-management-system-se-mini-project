@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Approve room change request · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Approve room change request</h1>
+<p class="page-lede mb-4">{{ change_request.student.name }} ({{ change_request.student.srn }})</p>
+
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<section class="panel mb-3">
+  <dl class="row mb-0">
+    <dt class="col-sm-3">Current room</dt>
+    <dd class="col-sm-9">{{ change_request.from_allocation.room.hostel.name }}, Room {{ change_request.from_allocation.room.room_no }}</dd>
+    <dt class="col-sm-3">Request reason</dt><dd class="col-sm-9">{{ change_request.reason }}</dd>
+    <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ change_request.get_status_display }}</dd>
+  </dl>
+</section>
+
+{% if pending %}
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="{{ form.destination_bed.id_for_label }}" class="form-label">{{ form.destination_bed.label }} <span aria-hidden="true">*</span></label>
+      {{ form.destination_bed }}
+      {% for e in form.destination_bed.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+      {% if not has_destination_beds %}
+        <div class="form-text">There are no available destination beds in your hostel scope.</div>
+      {% endif %}
+    </div>
+    <button type="submit" class="btn btn-brass" {% if not has_destination_beds %}disabled{% endif %}>Approve and move</button>
+    <a class="btn btn-outline-secondary" href="{% url 'allocation:change_request_queue' %}">Cancel</a>
+  </form>
+{% endif %}
+{% endblock %}
