@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Room change requests · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Room change requests</h1>
+<p class="page-lede mb-4">Submit and review requests to change your room.</p>
+
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+
+<section class="panel mb-3">
+  <h2 class="h5">Eligibility</h2>
+  {% if allocation %}
+    <p class="mb-1">Current room: {{ allocation.room.hostel.name }}, Room {{ allocation.room.room_no }}.</p>
+    {% if can_request %}
+      <p class="mb-0">You may request a room change.</p>
+    {% else %}
+      <p class="mb-0">You may request a room change on or after {{ eligible_on|date:"d-m-Y" }} (30 days after your allocation began).</p>
+    {% endif %}
+  {% else %}
+    <p class="mb-0">A confirmed room allocation is required before you can request a room change.</p>
+  {% endif %}
+</section>
+
+{% if can_request %}
+  <form method="post" class="panel mb-4" novalidate>
+    {% csrf_token %}
+    <h2 class="h5">Submit a request</h2>
+    <div class="mb-3">
+      <label for="{{ form.reason.id_for_label }}" class="form-label">{{ form.reason.label }} <span aria-hidden="true">*</span></label>
+      {{ form.reason }}
+      <div class="form-text">Enter between 10 and 300 characters.</div>
+      {% for e in form.reason.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-brass">Submit request</button>
+  </form>
+{% endif %}
+
+<section class="panel">
+  <h2 class="h5">Your requests</h2>
+  {% if requests %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <caption class="visually-hidden">Your room change requests and decisions</caption>
+        <thead><tr><th scope="col">Submitted</th><th scope="col">Room</th><th scope="col">Reason</th>
+          <th scope="col">Status</th><th scope="col">Decision reason</th></tr></thead>
+        <tbody>
+          {% for item in requests %}
+            <tr>
+              <td>{{ item.created_at|date:"d-m-Y" }}</td>
+              <td>{{ item.from_allocation.room.hostel.name }}, {{ item.from_allocation.room.room_no }}</td>
+              <td>{{ item.reason }}</td>
+              <td>{{ item.get_status_display }}</td>
+              <td>{% if item.status == "REJECTED" %}{{ item.decision_reason }}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="mb-0">You have not submitted any room change requests.</p>
+  {% endif %}
+</section>
+{% endblock %}

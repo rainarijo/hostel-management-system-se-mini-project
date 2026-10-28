@@ -1,5 +1,5 @@
 """Allocation business logic (SAD 4.4). Views call these; they raise apps.core.exceptions on rule violations."""
-from datetime import date
+from datetime import date, timedelta
 
 from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Q, Value, When
@@ -14,9 +14,10 @@ from apps.core.exceptions import (AccessDenied, AlreadyAllocated, BedUnavailable
 from apps.core.sequences import next_number
 from apps.notifications.services import APPLICATION_ALLOCATED, APPLICATION_REJECTED, enqueue
 from apps.rooms.models import Hostel, Room, RoomStatus, RoomType
+from apps.students.models import StudentProfile
 
 from .models import (ACTIVE_STATUSES, Allocation, AllocationStatus, ApplicationStatus, ApplicationWindow,
-                     AutoAllocateRun, RoomApplication, RunStatus)
+                     AutoAllocateRun, ChangeStatus, RoomApplication, RoomChangeRequest, RunStatus)
 from .signals import allocation_created
 
 # FR-4.4 priority groups, lowest number first in the queue.
@@ -238,6 +239,117 @@ def reject(application, reason, actor):
             "application_no": application.application_no, "academic_year": application.academic_year,
             "reason": reason})
     return application
+
+
+ROOM_CHANGE_WAIT_DAYS = 30
+
+
+def student_room_change_data(student):
+    """FR-5.1, FR-5.3: return a student's confirmed allocation and their requests."""
+    if student is None:
+        return {"allocation": None, "eligible_on": None, "can_request": False, "requests": []}
+
+    allocation = (Allocation.objects.filter(student=student, status=AllocationStatus.CONFIRMED)
+                  .select_related("room__hostel").first())
+    eligible_on = allocation.start_date + timedelta(days=ROOM_CHANGE_WAIT_DAYS) if allocation else None
+    return {
+        "allocation": allocation,
+        "eligible_on": eligible_on,
+        "can_request": allocation is not None and timezone.localdate() >= eligible_on,
+        "requests": (RoomChangeRequest.objects.filter(student=student)
+                     .select_related("from_allocation__room__hostel").order_by("-created_at", "-pk")),
+    }
+
+
+def submit_room_change_request(student, reason, request=None):
+    """FR-5.1: submit a request for a confirmed allocation after the 30-day wait."""
+    reason = (reason or "").strip()
+    max_length = RoomChangeRequest._meta.get_field("reason").max_length
+    if len(reason) < 10:
+        raise ValidationFailure("Enter a reason of at least 10 characters.")
+    if len(reason) > max_length:
+        raise ValidationFailure(f"Keep the reason to {max_length} characters or fewer.")
+
+    try:
+        with transaction.atomic():
+            student = StudentProfile.objects.select_for_update().get(pk=student.pk)
+            if student.change_requests.filter(status=ChangeStatus.PENDING).exists():
+                raise BusinessRuleViolation("You already have a pending room change request.")
+
+            allocation = (Allocation.objects.select_for_update()
+                          .filter(student=student, status=AllocationStatus.CONFIRMED)
+                          .select_related("room__hostel").first())
+            if allocation is None:
+                raise BusinessRuleViolation("A confirmed allocation is required to request a room change.")
+
+            eligible_on = allocation.start_date + timedelta(days=ROOM_CHANGE_WAIT_DAYS)
+            if timezone.localdate() < eligible_on:
+                raise BusinessRuleViolation(
+                    f"You can request a room change on or after {eligible_on:%d-%m-%Y}."
+                )
+
+            change_request = RoomChangeRequest.objects.create(
+                student=student, from_allocation=allocation, reason=reason,
+            )
+            log_action("ROOM_CHANGE_REQUEST_SUBMITTED", user=student.user, entity="room_change_request",
+                       entity_id=change_request.pk, new=f"allocation {allocation.pk}; status PENDING",
+                       request=request)
+    except IntegrityError as exc:
+        if RoomChangeRequest.objects.filter(student_id=student.pk, status=ChangeStatus.PENDING).exists():
+            raise BusinessRuleViolation("You already have a pending room change request.") from exc
+        raise
+    return change_request
+
+
+def _scoped_room_change_requests(actor):
+    if actor.role not in (Role.WARDEN, Role.ADMIN):
+        raise AccessDenied()
+    return RoomChangeRequest.objects.filter(from_allocation__room__hostel__in=scoped_hostels(actor))
+
+
+def list_pending_room_change_requests(actor):
+    """FR-5.3: pending requests for hostels managed by this Warden or Administrator."""
+    return (_scoped_room_change_requests(actor).filter(status=ChangeStatus.PENDING)
+            .select_related("student", "from_allocation__room__hostel").order_by("created_at", "pk"))
+
+
+def get_room_change_request(pk, actor):
+    """Return one request only when it belongs to a hostel in the actor's scope."""
+    try:
+        return (_scoped_room_change_requests(actor)
+                .select_related("student", "from_allocation__room__hostel").get(pk=pk))
+    except RoomChangeRequest.DoesNotExist:
+        raise ObjectNotFound()
+
+
+def reject_room_change_request(change_request, reason, actor):
+    """FR-5.3: reject a pending request and retain the reason for the student."""
+    if actor.role not in (Role.WARDEN, Role.ADMIN):
+        raise AccessDenied()
+    reason = (reason or "").strip()
+    max_length = RoomChangeRequest._meta.get_field("decision_reason").max_length
+    if not reason:
+        raise ValidationFailure("Enter a rejection reason.")
+    if len(reason) > max_length:
+        raise ValidationFailure(f"Keep the rejection reason to {max_length} characters or fewer.")
+
+    with transaction.atomic():
+        try:
+            change_request = (_scoped_room_change_requests(actor).select_for_update()
+                              .get(pk=change_request.pk))
+        except RoomChangeRequest.DoesNotExist:
+            raise ObjectNotFound()
+        if change_request.status != ChangeStatus.PENDING:
+            raise BusinessRuleViolation("This room change request is no longer pending.")
+
+        change_request.status = ChangeStatus.REJECTED
+        change_request.decision_reason = reason
+        change_request.decided_by = actor
+        change_request.save(update_fields=["status", "decision_reason", "decided_by", "updated_at"])
+        log_action("ROOM_CHANGE_REQUEST_REJECTED", user=actor, entity="room_change_request",
+                   entity_id=change_request.pk, old=ChangeStatus.PENDING.label,
+                   new=f"{ChangeStatus.REJECTED.label}; {reason}")
+    return change_request
 
 
 def confirm(allocation):

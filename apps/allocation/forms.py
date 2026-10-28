@@ -102,3 +102,20 @@ class ApplicationForm(forms.Form):
     @property
     def preferences(self):
         return [self.cleaned_data[n] for n in self.PREFERENCE_FIELDS if self.cleaned_data.get(n)]
+
+
+class RoomChangeRequestForm(forms.Form):
+    reason = forms.CharField(
+        label="Reason for room change",
+        min_length=10,
+        max_length=300,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+    )
+
+
+class RoomChangeDecisionForm(forms.Form):
+    reason = forms.CharField(
+        label="Rejection reason",
+        max_length=300,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+    )
