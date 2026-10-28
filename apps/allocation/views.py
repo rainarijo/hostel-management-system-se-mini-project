@@ -11,12 +11,13 @@ from apps.core.audit import log_action
 from apps.core.exceptions import (AccessDenied, BusinessRuleViolation, ObjectNotFound, ProfileIncomplete,
                                   ValidationFailure)
 from apps.core.permissions import role_required
-from apps.rooms.models import Room, RoomType
+from apps.rooms.models import Hostel, Room, RoomType
 
 from .forms import ApplicationForm, ApplicationWindowForm
 from .models import ApplicationStatus, ApplicationWindow, RoomApplication
-from .services import (GROUP_PRIORITY, GROUP_YEAR_1, allocate, candidate_beds, get_open_window, list_pending, reject,
-                       scoped_applications, submit_application, vacancy_by_room_type, window_status)
+from .services import (GROUP_PRIORITY, GROUP_YEAR_1, allocate, auto_allocate, candidate_beds, get_open_window,
+                       list_pending, reject, scoped_applications, scoped_hostels, submit_application,
+                       vacancy_by_room_type, window_status)
 
 YEAR_CHOICES = (1, 2, 3, 4)
 GROUP_BADGES = {GROUP_YEAR_1: ("Year 1", "text-bg-success"), GROUP_PRIORITY: ("Priority", "text-bg-warning")}
@@ -129,6 +130,7 @@ def queue(request):
     return render(request, "allocation/queue.html", {
         "page": page, "year": year, "pref": pref, "filters": filters.urlencode(),
         "year_choices": YEAR_CHOICES, "room_types": RoomType.choices,
+        "auto_hostels": scoped_hostels(request.user).filter(is_active=True),
     })
 
 
@@ -210,3 +212,24 @@ def reject_view(request, pk):
         "application": application, "student": application.student, "reason": reason,
         "error": error, "field_error": field_error, "pending": application.status == ApplicationStatus.PENDING,
     }, status=status)
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+@require_POST
+def auto_allocate_view(request):
+    """FR-4.7: run Auto-Allocate for one hostel and show the summary."""
+    hostel_id = request.POST.get("hostel_id", "")
+    hostel = Hostel.objects.filter(pk=hostel_id).first() if hostel_id.isdigit() else None
+    if hostel is None:
+        raise Http404
+    summary, error, status = None, None, 200
+    try:
+        summary = auto_allocate(hostel, request.user)
+    except ObjectNotFound:
+        raise Http404
+    except AccessDenied:
+        raise PermissionDenied
+    except BusinessRuleViolation as exc:                   # RunInProgress, inactive hostel
+        error, status = exc.message, 409
+    return render(request, "allocation/auto_allocate_result.html",
+                  {"hostel": hostel, "summary": summary, "error": error}, status=status)

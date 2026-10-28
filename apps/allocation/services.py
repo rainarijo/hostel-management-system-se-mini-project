@@ -9,13 +9,14 @@ from apps.accounts.models import Role
 from apps.core.audit import log_action
 from apps.core.exceptions import (AccessDenied, AlreadyAllocated, BedUnavailable, BusinessRuleViolation,
                                   DuplicateApplication, GenderMismatch, InvalidTransition, ObjectNotFound,
-                                  ProfileIncomplete, RoomUnderMaintenance, ValidationFailure, WindowClosed)
+                                  ProfileIncomplete, RoomUnderMaintenance, RunInProgress, ValidationFailure,
+                                  WindowClosed)
 from apps.core.sequences import next_number
 from apps.notifications.services import APPLICATION_ALLOCATED, APPLICATION_REJECTED, enqueue
 from apps.rooms.models import Hostel, Room, RoomStatus, RoomType
 
 from .models import (ACTIVE_STATUSES, Allocation, AllocationStatus, ApplicationStatus, ApplicationWindow,
-                     RoomApplication)
+                     AutoAllocateRun, RoomApplication, RunStatus)
 from .signals import allocation_created
 
 # FR-4.4 priority groups, lowest number first in the queue.
@@ -111,6 +112,11 @@ def list_pending(actor, year=None, preference=None):
         qs = qs.filter(student__year=year)
     if preference:
         qs = qs.filter(Q(preference_1=preference) | Q(preference_2=preference) | Q(preference_3=preference))
+    return _in_queue_order(qs)
+
+
+def _in_queue_order(qs):
+    """FR-4.4 order: Year 1, then priority flag, then everyone else; oldest first within each group."""
     return (qs.select_related("student")
             .annotate(priority_group=Case(
                 When(student__year=1, then=Value(GROUP_YEAR_1)),
@@ -248,3 +254,96 @@ def confirm(allocation):
         log_action("CONFIRM", entity="allocation", entity_id=allocation.pk,
                    old=AllocationStatus.PROVISIONAL.label, new=AllocationStatus.CONFIRMED.label)
     return allocation
+
+
+NO_PREFERRED_BED = "No vacant bed of the preferred room types."
+
+
+def _vacant_bed_map(hostel):
+    """Room type -> [(room, bed_no)] of vacant beds, ordered by floor, room number, bed number."""
+    rooms = (Room.objects.filter(hostel=hostel, is_active=True).exclude(status=RoomStatus.MAINTENANCE)
+             .select_related("hostel").order_by("floor", "room_no"))
+    held = set(Allocation.objects.active().filter(room__in=rooms).values_list("room_id", "bed_no"))
+    beds = {t: [] for t in RoomType.values}
+    for room in rooms:
+        beds[room.room_type].extend((room, n) for n in range(1, room.capacity + 1) if (room.pk, n) not in held)
+    return beds
+
+
+def _roommate_room_id(application, hostel, room_type):
+    """Room of the preferred roommate in this hostel and room type, if they hold an active allocation."""
+    if not application.preferred_roommate_srn:
+        return None
+    return (Allocation.objects.active()
+            .filter(student__srn=application.preferred_roommate_srn, room__hostel=hostel, room__room_type=room_type)
+            .values_list("room_id", flat=True).first())
+
+
+def _auto_allocate_one(application, hostel, beds, actor):
+    """Try each preference in order. Returns (allocation, None) or (None, reason)."""
+    preferences = [p for p in (application.preference_1, application.preference_2, application.preference_3) if p]
+    for pref in preferences:
+        roommate_room = _roommate_room_id(application, hostel, pref)
+        # Best effort (SAD 4.1.5): the roommate's room first, then the rest in floor/room/bed order.
+        ordered = sorted(beds[pref], key=lambda bed: bed[0].pk != roommate_room)
+        for room, bed_no in ordered:
+            try:
+                allocation = allocate(application, room, bed_no, actor)
+            except BedUnavailable:
+                beds[pref].remove((room, bed_no))      # taken by someone else meanwhile: try the next bed
+                continue
+            except BusinessRuleViolation as exc:       # GenderMismatch, RoomUnderMaintenance, AlreadyAllocated, ...
+                return None, exc.message
+            beds[pref].remove((room, bed_no))
+            return allocation, None
+    return None, NO_PREFERRED_BED
+
+
+def auto_allocate(hostel, actor):
+    """FR-4.7: allocate the pending applications for one hostel in FR-4.4 order (SAD 4.1.5).
+
+    Deliberately not one big transaction: each bed goes through allocate() in its own short
+    transaction, so a conflict affects only that application.
+    """
+    if actor.role not in (Role.WARDEN, Role.ADMIN):
+        raise AccessDenied()
+    if actor.role == Role.WARDEN and not actor.hostels.filter(pk=hostel.pk).exists():
+        raise ObjectNotFound()
+    if not hostel.is_active:
+        raise BusinessRuleViolation("This hostel is inactive.")
+
+    try:
+        with transaction.atomic():
+            run = AutoAllocateRun.objects.create(hostel=hostel, started_by=actor, status=RunStatus.RUNNING)
+    except IntegrityError:
+        # uniq_running_autoalloc_per_hostel
+        raise RunInProgress("Auto-Allocate is already running for this hostel.")
+
+    allocated, unallocated = [], []
+    try:
+        # NFR-SAFE-2: only students whose gender matches the hostel are considered.
+        pending = _in_queue_order(RoomApplication.objects.filter(status=ApplicationStatus.PENDING,
+                                                                 student__gender=hostel.gender_type))
+        beds = _vacant_bed_map(hostel)
+        for application in list(pending):
+            allocation, reason = _auto_allocate_one(application, hostel, beds, actor)
+            if allocation:
+                allocated.append({"application_no": application.application_no, "srn": application.student.srn,
+                                  "room": allocation.room, "bed": allocation.bed_no})
+            else:
+                unallocated.append({"application_no": application.application_no, "srn": application.student.srn,
+                                    "reason": reason})
+    except Exception:
+        run.status = RunStatus.FAILED
+        run.finished_at = timezone.now()
+        run.allocated_count, run.unallocated_count = len(allocated), len(unallocated)
+        run.save(update_fields=["status", "finished_at", "allocated_count", "unallocated_count"])
+        raise
+
+    run.status = RunStatus.DONE
+    run.finished_at = timezone.now()
+    run.allocated_count, run.unallocated_count = len(allocated), len(unallocated)
+    run.save(update_fields=["status", "finished_at", "allocated_count", "unallocated_count"])
+    log_action("AUTO_ALLOCATE", user=actor, entity="auto_allocate_run", entity_id=run.pk, old="",
+               new=f"{len(allocated)} allocated, {len(unallocated)} unallocated")
+    return {"run": run, "allocated": allocated, "unallocated": unallocated}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Auto-Allocate {{ hostel.name }} · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Auto-Allocate: {{ hostel.name }}</h1>
+
+{% if error %}
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endif %}
+
+{% if summary %}
+<p class="page-lede mb-4">{{ summary.allocated|length }} allocated, {{ summary.unallocated|length }} unallocated.
+  Finished {{ summary.run.finished_at|date:"d-m-Y H:i" }}. New allocations are Provisional until the fee is paid.</p>
+
+<div class="panel mb-3">
+  <h2 class="h5">Allocated</h2>
+  {% if summary.allocated %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Applications allocated in this run</caption>
+      <thead><tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Room</th><th scope="col">Bed</th></tr></thead>
+      <tbody>
+        {% for row in summary.allocated %}
+        <tr><td>{{ row.application_no }}</td><td>{{ row.srn }}</td><td>{{ row.room.room_no }} ({{ row.room.get_room_type_display }})</td><td>{{ row.bed }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="mb-0">No applications were allocated.</p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2 class="h5">Unallocated</h2>
+  {% if summary.unallocated %}
+  <p class="small text-body-secondary">These applications stay Pending in the queue.</p>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <caption class="visually-hidden">Applications not allocated in this run, with reasons</caption>
+      <thead><tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Reason</th></tr></thead>
+      <tbody>
+        {% for row in summary.unallocated %}
+        <tr><td>{{ row.application_no }}</td><td>{{ row.srn }}</td><td>{{ row.reason }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="mb-0">Every pending application for this hostel was allocated.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+<a class="btn btn-outline-secondary mt-3" href="{% url 'allocation:queue' %}">Back to queue</a>
+{% endblock %}

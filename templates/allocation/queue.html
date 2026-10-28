@@ -27,6 +27,40 @@
   </div>
 </form>
 
+{% if auto_hostels %}
+<form method="post" action="{% url 'allocation:auto_allocate' %}" class="panel mb-3">
+  {% csrf_token %}
+  <div class="row g-2 align-items-end">
+    <div class="col-sm-6 col-md-4">
+      <label for="id_hostel_id" class="form-label">Auto-Allocate hostel <span aria-hidden="true">*</span></label>
+      <select name="hostel_id" id="id_hostel_id" class="form-select" required>
+        {% for h in auto_hostels %}<option value="{{ h.pk }}">{{ h.name }} ({{ h.get_gender_type_display }})</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-6 col-md-4">
+      <button type="button" class="btn btn-brass" data-bs-toggle="modal" data-bs-target="#auto-allocate-confirm">Auto-Allocate</button>
+    </div>
+  </div>
+  <div class="modal fade" id="auto-allocate-confirm" tabindex="-1" aria-labelledby="auto-allocate-title" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="auto-allocate-title">Run Auto-Allocate?</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Every pending application for the selected hostel's gender will get a vacant bed of the highest available preference, in queue order. Each student is e-mailed. Allocations are Provisional.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-brass">Run Auto-Allocate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endif %}
+
 <div class="panel">
   {% if page.object_list %}
   <p class="small text-body-secondary">{{ page.paginator.count }} pending application{{ page.paginator.count|pluralize }}{% if year or pref %} matching the filters{% endif %}.</p>
