@@ -20,8 +20,9 @@ from .services import (
     GROUP_PRIORITY, GROUP_YEAR_1, allocate, approve_room_change_request, auto_allocate, candidate_beds,
     check_out_allocation, get_active_allocation_for_warden, get_open_window, get_room_change_request,
     list_active_allocations_for_warden, list_pending, list_pending_room_change_requests, reject,
-    reject_room_change_request, room_change_bed_options, scoped_applications, scoped_hostels,
-    student_room_change_data, submit_application, submit_room_change_request, vacancy_by_room_type, window_status,
+    reject_room_change_request, room_change_bed_options, scoped_allocation_history, scoped_applications,
+    scoped_hostels, student_allocation_history, student_room_change_data, submit_application,
+    submit_room_change_request, vacancy_by_room_type, window_status,
 )
 
 YEAR_CHOICES = (1, 2, 3, 4)
@@ -115,6 +116,27 @@ def application_detail(request, application_no):
         allocation = application.allocation_set.select_related("room__hostel").first()
     return render(request, "allocation/application_detail.html",
                   {"application": application, "preferences": preferences, "allocation": allocation})
+
+
+@role_required(Role.STUDENT)
+def allocation_history(request):
+    """FR-5.5: show the authenticated student's own current and past allocations."""
+    student = getattr(request.user, "student_profile", None)
+    allocations = student_allocation_history(student)
+    return render(request, "allocation/allocation_history.html", {
+        "allocations": allocations, "is_student_view": True,
+    })
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+def allocation_history_manage(request):
+    """FR-5.5: show allocation history only within the actor's authorized hostel scope."""
+    query = request.GET.get("q", "").strip()
+    allocations = Paginator(scoped_allocation_history(request.user, query=query), 50).get_page(
+        request.GET.get("page"))
+    return render(request, "allocation/allocation_history.html", {
+        "allocations": allocations, "query": query, "is_student_view": False,
+    })
 
 
 @role_required(Role.STUDENT)
