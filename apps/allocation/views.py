@@ -16,8 +16,8 @@ from apps.rooms.models import Hostel, Room, RoomType
 from .forms import ApplicationForm, ApplicationWindowForm
 from .models import ApplicationStatus, ApplicationWindow, RoomApplication
 from .services import (GROUP_PRIORITY, GROUP_YEAR_1, allocate, auto_allocate, candidate_beds, get_open_window,
-                       list_pending, reject, scoped_applications, scoped_hostels, submit_application,
-                       vacancy_by_room_type, window_status)
+                       list_pending, reject, scoped_allocation_history, scoped_applications, scoped_hostels,
+                       student_allocation_history, submit_application, vacancy_by_room_type, window_status)
 
 YEAR_CHOICES = (1, 2, 3, 4)
 GROUP_BADGES = {GROUP_YEAR_1: ("Year 1", "text-bg-success"), GROUP_PRIORITY: ("Priority", "text-bg-warning")}
@@ -110,6 +110,27 @@ def application_detail(request, application_no):
         allocation = application.allocation_set.select_related("room__hostel").first()
     return render(request, "allocation/application_detail.html",
                   {"application": application, "preferences": preferences, "allocation": allocation})
+
+
+@role_required(Role.STUDENT)
+def allocation_history(request):
+    """FR-5.5: show the authenticated student's own current and past allocations."""
+    student = getattr(request.user, "student_profile", None)
+    allocations = student_allocation_history(student)
+    return render(request, "allocation/allocation_history.html", {
+        "allocations": allocations, "is_student_view": True,
+    })
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+def allocation_history_manage(request):
+    """FR-5.5: show allocation history only within the actor's authorized hostel scope."""
+    query = request.GET.get("q", "").strip()
+    allocations = Paginator(scoped_allocation_history(request.user, query=query), 50).get_page(
+        request.GET.get("page"))
+    return render(request, "allocation/allocation_history.html", {
+        "allocations": allocations, "query": query, "is_student_view": False,
+    })
 
 
 @role_required(Role.WARDEN, Role.ADMIN)

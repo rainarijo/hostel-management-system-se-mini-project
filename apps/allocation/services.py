@@ -29,6 +29,31 @@ def get_open_window(today=None):
     return ApplicationWindow.objects.filter(start_date__lte=today, end_date__gte=today).first()
 
 
+def student_allocation_history(student):
+    """FR-5.5: allocation records belonging only to one student."""
+    if student is None:
+        return Allocation.objects.none()
+    return (Allocation.objects.filter(student=student)
+            .select_related("room__hostel")
+            .order_by("-start_date", "-created_at", "-pk"))
+
+
+def scoped_allocation_history(actor, query=""):
+    """FR-5.5: allocation history visible to Wardens in their hostels and Administrators."""
+    hostels = scoped_hostels(actor)
+    allocations = (
+        Allocation.objects.filter(room__hostel__in=hostels)
+        .select_related("student", "room__hostel")
+        .order_by("-start_date", "-created_at", "-pk")
+    )
+    query = query.strip()
+    if query:
+        allocations = allocations.filter(
+            Q(student__srn__icontains=query) | Q(student__name__icontains=query)
+        )
+    return allocations
+
+
 def require_open_window(today=None):
     """FR-4.1: the open window, or raise WindowClosed."""
     window = get_open_window(today)

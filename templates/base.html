@@ -22,11 +22,13 @@
         {% if user.role == "STUDENT" %}
           <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">My profile</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'allocation:apply' %}">Room application</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:history' %}">Allocation history</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'fees:index' %}">Fees</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'complaints:index' %}">Complaints</a></li>
         {% elif user.role == "WARDEN" %}
           <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">Students</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'allocation:queue' %}">Applications</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:history_manage' %}">Allocation history</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'rooms:index' %}">Rooms</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'complaints:index' %}">Complaints</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'fees:index' %}">Fees</a></li>
@@ -36,6 +38,7 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'rooms:index' %}">Hostels and rooms</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'students:index' %}">Students</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'allocation:queue' %}">Applications</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'allocation:history_manage' %}">Allocation history</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'allocation:window_list' %}">Application windows</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'accounts:account_list' %}">Account administration</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}">Reports</a></li>
