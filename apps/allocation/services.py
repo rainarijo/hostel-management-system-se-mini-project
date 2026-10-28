@@ -1,6 +1,7 @@
 """Allocation business logic (SAD 4.4). Views call these; they raise apps.core.exceptions on rule violations."""
 from datetime import date, timedelta
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils import timezone
@@ -350,6 +351,180 @@ def reject_room_change_request(change_request, reason, actor):
                    entity_id=change_request.pk, old=ChangeStatus.PENDING.label,
                    new=f"{ChangeStatus.REJECTED.label}; {reason}")
     return change_request
+
+
+def room_change_bed_options(change_request, actor):
+    """Available destination beds in hostels this Warden or Administrator can manage."""
+    if not _scoped_room_change_requests(actor).filter(pk=change_request.pk).exists():
+        raise ObjectNotFound()
+
+    rooms = (Room.objects.filter(hostel__in=scoped_hostels(actor), hostel__is_active=True,
+                                 hostel__gender_type=change_request.student.gender, is_active=True)
+             .exclude(status=RoomStatus.MAINTENANCE).select_related("hostel"))
+    held = set(Allocation.objects.active().filter(room__in=rooms).values_list("room_id", "bed_no"))
+    return [
+        (f"{room.pk}:{bed_no}",
+         f"{room.hostel.name} - Room {room.room_no} ({room.get_room_type_display()}) - Bed {bed_no}")
+        for room in rooms.order_by("pk")
+        for bed_no in range(1, room.capacity + 1)
+        if (room.pk, bed_no) not in held
+    ]
+
+
+def approve_room_change_request(change_request, room, bed_no, actor, request=None):
+    """FR-5.2: move a student atomically to a vacant bed and retain their fee history."""
+    if actor.role not in (Role.WARDEN, Role.ADMIN):
+        raise AccessDenied()
+
+    initial = get_room_change_request(change_request.pk, actor)
+    old_allocation_id = initial.from_allocation_id
+    old_room_id = initial.from_allocation.room_id
+    today = timezone.localdate()
+
+    with transaction.atomic():
+        room_ids = sorted({old_room_id, room.pk})
+        locked_rooms = list(Room.objects.select_for_update().filter(pk__in=room_ids).order_by("pk"))
+        room_by_id = {locked.pk: locked for locked in locked_rooms}
+        if len(room_by_id) != len(room_ids):
+            raise ObjectNotFound()
+        old_room = room_by_id[old_room_id]
+        destination = room_by_id[room.pk]
+
+        try:
+            change_request = RoomChangeRequest.objects.select_for_update().get(pk=initial.pk)
+        except RoomChangeRequest.DoesNotExist:
+            raise ObjectNotFound()
+        if change_request.status != ChangeStatus.PENDING:
+            raise BusinessRuleViolation("This room change request is no longer pending.")
+        if change_request.from_allocation_id != old_allocation_id:
+            raise BusinessRuleViolation("The allocation for this request has changed.")
+        if not _scoped_room_change_requests(actor).filter(pk=change_request.pk).exists():
+            raise ObjectNotFound()
+        if not scoped_hostels(actor).filter(pk=destination.hostel_id, is_active=True).exists():
+            raise ObjectNotFound()
+
+        try:
+            old_allocation = Allocation.objects.select_for_update().get(
+                pk=old_allocation_id, student_id=change_request.student_id)
+        except Allocation.DoesNotExist:
+            raise BusinessRuleViolation("The student's original allocation is no longer active.")
+        if old_allocation.status not in ACTIVE_STATUSES:
+            raise BusinessRuleViolation("The student's original allocation is no longer active.")
+        if Allocation.objects.active().filter(student_id=change_request.student_id).exclude(
+                pk=old_allocation.pk).exists():
+            raise AlreadyAllocated()
+
+        destination_hostel = Hostel.objects.get(pk=destination.hostel_id)
+        if destination_hostel.gender_type != change_request.student.gender:
+            raise GenderMismatch()
+        if destination.status == RoomStatus.MAINTENANCE:
+            raise RoomUnderMaintenance()
+        if not destination.is_active or not destination_hostel.is_active:
+            raise BedUnavailable()
+        if not isinstance(bed_no, int) or not 1 <= bed_no <= destination.capacity:
+            raise ValidationFailure(f"Choose a bed between 1 and {destination.capacity}.")
+        if _bed_is_held(destination, bed_no):
+            raise BedUnavailable()
+
+        from apps.fees.services import create_fee_record, move_fee_record
+
+        create_fee_record(old_allocation)
+        old_allocation.status = AllocationStatus.ENDED
+        old_allocation.end_date = today
+        old_allocation.end_reason = "Room change approved"
+        old_allocation.save(update_fields=["status", "end_date", "end_reason", "updated_at"])
+
+        try:
+            with transaction.atomic():
+                replacement = Allocation.objects.create(
+                    student=change_request.student, room=destination, bed_no=bed_no,
+                    academic_year=old_allocation.academic_year, start_date=today,
+                    end_date=_next_31_may(today), status=AllocationStatus.PROVISIONAL,
+                )
+        except (IntegrityError, DjangoValidationError) as exc:
+            if Allocation.objects.active().filter(room=destination, bed_no=bed_no).exists():
+                raise BedUnavailable()
+            if Allocation.objects.active().filter(student_id=change_request.student_id).exists():
+                raise AlreadyAllocated()
+            if isinstance(exc, DjangoValidationError) and any(
+                    "There are no vacant beds" in message for message in exc.messages):
+                raise BedUnavailable() from exc
+            raise
+
+        fee_record = move_fee_record(old_allocation, replacement, destination.annual_fee)
+        replacement.status = (AllocationStatus.CONFIRMED if fee_record.amount_paid >= fee_record.total_amount
+                              else AllocationStatus.PROVISIONAL)
+        replacement.save(update_fields=["status", "updated_at"])
+
+        old_room.refresh_status()
+        if destination.pk != old_room.pk:
+            destination.refresh_status()
+
+        change_request.status = ChangeStatus.APPROVED
+        change_request.decided_by = actor
+        change_request.save(update_fields=["status", "decided_by", "updated_at"])
+        log_action(
+            "ROOM_CHANGE_REQUEST_APPROVED", user=actor, entity="room_change_request",
+            entity_id=change_request.pk, old=f"allocation {old_allocation.pk} active",
+            new=(f"allocation {old_allocation.pk} ended; allocation {replacement.pk} "
+                 f"created at {destination} bed {bed_no}; fee total {fee_record.total_amount}"),
+            request=request,
+        )
+    return replacement
+
+
+def list_active_allocations_for_warden(actor):
+    """FR-5.4: active allocations in the Warden's assigned active hostels."""
+    if actor.role != Role.WARDEN:
+        raise AccessDenied()
+    return (Allocation.objects.active().filter(room__hostel__in=scoped_hostels(actor))
+            .select_related("student", "room__hostel").order_by("room__hostel__name", "room__room_no", "bed_no"))
+
+
+def get_active_allocation_for_warden(pk, actor):
+    """Return one active allocation only when its hostel is in the Warden's scope."""
+    if actor.role != Role.WARDEN:
+        raise AccessDenied()
+    try:
+        return (Allocation.objects.active().filter(room__hostel__in=scoped_hostels(actor))
+                .select_related("student", "room__hostel").get(pk=pk))
+    except Allocation.DoesNotExist:
+        raise ObjectNotFound()
+
+
+def check_out_allocation(allocation, checkout_date, actor, request=None):
+    """FR-5.4: end an active allocation and release its bed atomically."""
+    if actor.role != Role.WARDEN:
+        raise AccessDenied()
+    if not scoped_hostels(actor).filter(pk=allocation.room.hostel_id).exists():
+        raise ObjectNotFound()
+
+    with transaction.atomic():
+        room = Room.objects.select_for_update().get(pk=allocation.room_id)
+        try:
+            allocation = Allocation.objects.select_for_update().get(pk=allocation.pk)
+        except Allocation.DoesNotExist:
+            raise ObjectNotFound()
+        if allocation.status not in ACTIVE_STATUSES:
+            raise BusinessRuleViolation("This allocation is no longer active.")
+        today = timezone.localdate()
+        if checkout_date > today:
+            raise ValidationFailure("Check-out date cannot be in the future.")
+        if checkout_date < allocation.start_date:
+            raise ValidationFailure("Check-out date cannot be before the allocation start date.")
+
+        old_status = allocation.status
+        allocation.status = AllocationStatus.ENDED
+        allocation.end_date = checkout_date
+        allocation.end_reason = "Student checked out"
+        allocation.save(update_fields=["status", "end_date", "end_reason", "updated_at"])
+        room.refresh_status()
+        log_action(
+            "CHECK_OUT", user=actor, entity="allocation", entity_id=allocation.pk,
+            old=old_status, new=f"{AllocationStatus.ENDED.label} on {checkout_date:%Y-%m-%d}",
+            request=request,
+        )
+    return allocation
 
 
 def confirm(allocation):

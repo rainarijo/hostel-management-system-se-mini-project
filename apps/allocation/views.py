@@ -13,13 +13,15 @@ from apps.core.exceptions import (AccessDenied, BusinessRuleViolation, ObjectNot
 from apps.core.permissions import role_required
 from apps.rooms.models import Hostel, Room, RoomType
 
-from .forms import (ApplicationForm, ApplicationWindowForm, RoomChangeDecisionForm, RoomChangeRequestForm)
+from .forms import (AllocationCheckOutForm, ApplicationForm, ApplicationWindowForm, RoomChangeApprovalForm,
+                    RoomChangeDecisionForm, RoomChangeRequestForm)
 from .models import ApplicationStatus, ApplicationWindow, ChangeStatus, RoomApplication
 from .services import (
-    GROUP_PRIORITY, GROUP_YEAR_1, allocate, auto_allocate, candidate_beds, get_open_window, get_room_change_request,
-    list_pending, list_pending_room_change_requests, reject, reject_room_change_request, scoped_applications,
-    scoped_hostels, student_room_change_data, submit_application, submit_room_change_request, vacancy_by_room_type,
-    window_status,
+    GROUP_PRIORITY, GROUP_YEAR_1, allocate, approve_room_change_request, auto_allocate, candidate_beds,
+    check_out_allocation, get_active_allocation_for_warden, get_open_window, get_room_change_request,
+    list_active_allocations_for_warden, list_pending, list_pending_room_change_requests, reject,
+    reject_room_change_request, room_change_bed_options, scoped_applications, scoped_hostels,
+    student_room_change_data, submit_application, submit_room_change_request, vacancy_by_room_type, window_status,
 )
 
 YEAR_CHOICES = (1, 2, 3, 4)
@@ -181,6 +183,92 @@ def reject_room_change_request_view(request, pk):
     return render(request, "allocation/change_request_reject.html", {
         "change_request": change_request, "form": form, "error": error,
         "pending": change_request.status == ChangeStatus.PENDING,
+    }, status=status)
+
+
+@role_required(Role.WARDEN, Role.ADMIN)
+def approve_room_change_request_view(request, pk):
+    """FR-5.2: approve a pending request by selecting an available destination bed."""
+    try:
+        change_request = get_room_change_request(pk, request.user)
+        destination_beds = room_change_bed_options(change_request, request.user)
+    except ObjectNotFound:
+        raise Http404
+    except AccessDenied:
+        raise PermissionDenied
+
+    form = RoomChangeApprovalForm(request.POST or None, destination_beds=destination_beds)
+    error, status = None, 200
+    if request.method == "POST":
+        if change_request.status != ChangeStatus.PENDING:
+            error, status = "This room change request is no longer pending.", 409
+        elif form.is_valid():
+            room_id, _, bed_no = form.cleaned_data["destination_bed"].partition(":")
+            try:
+                approve_room_change_request(
+                    change_request, Room(pk=int(room_id)), int(bed_no), request.user, request=request,
+                )
+            except ObjectNotFound:
+                raise Http404
+            except AccessDenied:
+                raise PermissionDenied
+            except BusinessRuleViolation as exc:
+                error, status = exc.message, 409
+            except ValidationFailure as exc:
+                form.add_error("destination_bed", exc.message)
+            else:
+                messages.success(request, "Room change request approved and allocation updated.")
+                return redirect("allocation:change_request_queue")
+        try:
+            change_request = get_room_change_request(pk, request.user)
+            destination_beds = room_change_bed_options(change_request, request.user)
+        except ObjectNotFound:
+            raise Http404
+        form.fields["destination_bed"].choices = [("", "Choose a destination bed")] + list(destination_beds)
+
+    return render(request, "allocation/change_request_approve.html", {
+        "change_request": change_request, "form": form, "error": error,
+        "pending": change_request.status == ChangeStatus.PENDING,
+        "has_destination_beds": bool(destination_beds),
+    }, status=status)
+
+
+@role_required(Role.WARDEN)
+def active_allocations(request):
+    """FR-5.4: list active allocations in the Warden's assigned hostels."""
+    try:
+        allocations = list_active_allocations_for_warden(request.user)
+    except AccessDenied:
+        raise PermissionDenied
+    return render(request, "allocation/active_allocations.html", {"allocations": allocations})
+
+
+@role_required(Role.WARDEN)
+def check_out_allocation_view(request, pk):
+    """FR-5.4: record the check-out date for one active allocation."""
+    try:
+        allocation = get_active_allocation_for_warden(pk, request.user)
+    except ObjectNotFound:
+        raise Http404
+
+    form = AllocationCheckOutForm(request.POST or None, initial={"checkout_date": timezone.localdate()})
+    error, status = None, 200
+    if request.method == "POST" and form.is_valid():
+        try:
+            check_out_allocation(allocation, form.cleaned_data["checkout_date"], request.user, request=request)
+        except ObjectNotFound:
+            raise Http404
+        except AccessDenied:
+            raise PermissionDenied
+        except BusinessRuleViolation as exc:
+            error, status = exc.message, 409
+        except ValidationFailure as exc:
+            form.add_error("checkout_date", exc.message)
+        else:
+            messages.success(request, f"{allocation.student.name} checked out successfully.")
+            return redirect("allocation:active_allocations")
+    return render(request, "allocation/check_out.html", {
+        "allocation": allocation, "form": form, "error": error,
     }, status=status)
 
 
