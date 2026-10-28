@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Active allocations · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Active allocations</h1>
+<p class="page-lede mb-4">Record check-out for students in your assigned hostels.</p>
+<div class="panel">
+  {% if allocations %}
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <caption class="visually-hidden">Active student allocations</caption>
+        <thead><tr><th scope="col">Student</th><th scope="col">Hostel</th><th scope="col">Room</th>
+          <th scope="col">Bed</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          {% for allocation in allocations %}
+            <tr>
+              <td>{{ allocation.student.name }} ({{ allocation.student.srn }})</td>
+              <td>{{ allocation.room.hostel.name }}</td>
+              <td>{{ allocation.room.room_no }}</td>
+              <td>{{ allocation.bed_no }}</td>
+              <td>{{ allocation.get_status_display }}</td>
+              <td><a class="btn btn-sm btn-outline-danger" href="{% url 'allocation:check_out' allocation.pk %}">Check out</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="mb-0">There are no active allocations in your assigned hostels.</p>
+  {% endif %}
+</div>
+{% endblock %}

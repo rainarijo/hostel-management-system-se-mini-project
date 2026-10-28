@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Check out student · Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Check out student</h1>
+<p class="page-lede mb-4">{{ allocation.student.name }} ({{ allocation.student.srn }})</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<section class="panel mb-3">
+  <dl class="row mb-0">
+    <dt class="col-sm-3">Hostel</dt><dd class="col-sm-9">{{ allocation.room.hostel.name }}</dd>
+    <dt class="col-sm-3">Room and bed</dt><dd class="col-sm-9">{{ allocation.room.room_no }}, Bed {{ allocation.bed_no }}</dd>
+    <dt class="col-sm-3">Allocation status</dt><dd class="col-sm-9">{{ allocation.get_status_display }}</dd>
+  </dl>
+</section>
+<form method="post" class="panel" novalidate>
+  {% csrf_token %}
+  <div class="mb-3">
+    <label for="{{ form.checkout_date.id_for_label }}" class="form-label">{{ form.checkout_date.label }} <span aria-hidden="true">*</span></label>
+    {{ form.checkout_date }}
+    {% for e in form.checkout_date.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+  </div>
+  <button type="submit" class="btn btn-danger">Record check-out</button>
+  <a class="btn btn-outline-secondary" href="{% url 'allocation:active_allocations' %}">Cancel</a>
+</form>
+{% endblock %}
