@@ -1,4 +1,6 @@
 """Allocation business logic (SAD 4.4). Views call these; they raise apps.core.exceptions on rule violations."""
+import logging
+import time
 from datetime import date, timedelta
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -20,6 +22,8 @@ from apps.students.models import StudentProfile
 from .models import (ACTIVE_STATUSES, Allocation, AllocationStatus, ApplicationStatus, ApplicationWindow,
                      AutoAllocateRun, ChangeStatus, RoomApplication, RoomChangeRequest, RunStatus)
 from .signals import allocation_created
+
+logger = logging.getLogger("hms.allocation")
 
 # FR-4.4 priority groups, lowest number first in the queue.
 GROUP_YEAR_1, GROUP_PRIORITY, GROUP_STANDARD = 0, 1, 2
@@ -187,6 +191,7 @@ def allocate(application, room, bed_no, actor):
     The pre-checks give friendly messages; the database constraints uniq_active_bed and
     uniq_active_allocation_per_student are the real guarantee under concurrent requests.
     """
+    started = time.perf_counter()                           # NFR-PERF-2: whole transaction, incl. commit
     with transaction.atomic():
         hostels = scoped_hostels(actor)                     # AccessDenied for anyone but Warden/Admin
         in_scope = (scoped_applications(actor).filter(pk=application.pk).exists()
@@ -238,6 +243,9 @@ def allocate(application, room, bed_no, actor):
         enqueue(APPLICATION_ALLOCATED, student.user.email, application.application_no, {
             "application_no": application.application_no, "hostel": room.hostel.name, "room": room.room_no,
             "bed": bed_no, "status": AllocationStatus.PROVISIONAL.label})
+    # SAD 4.4.4: ids only, no personal data. Alert when p95 of allocation_ms is above 1000.
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+    logger.info("allocation created", extra={"allocation_ms": elapsed_ms, "allocation_id": allocation.pk})
     return allocation
 
 

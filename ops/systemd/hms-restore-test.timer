@@ -1,0 +1,10 @@
+[Unit]
+Description=Test restoring the latest HMS backup on the 1st of every month
+
+[Timer]
+OnCalendar=*-*-01 03:00:00 Asia/Kolkata
+Persistent=true
+Unit=hms-restore-test.service
+
+[Install]
+WantedBy=timers.target
