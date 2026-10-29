@@ -1,9 +1,11 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from apps.accounts.models import Role
-from apps.allocation.models import Allocation, RoomApplication
+from apps.allocation.models import Allocation, ApplicationStatus, RoomApplication
 from apps.allocation.services import list_pending
 from apps.complaints.models import Complaint
 from apps.core.permissions import role_required
@@ -23,8 +25,8 @@ def home(request):
 
 
 def _bed_summary(rooms):
-    total = sum(r.capacity for r in rooms)
-    occupied = sum(r.occupancy for r in rooms)
+    total = rooms.aggregate(total=Coalesce(Sum("capacity"), Value(0)))["total"]
+    occupied = Allocation.objects.active().filter(room__in=rooms).count()
     return {"total": total, "occupied": occupied, "vacant": total - occupied,
             "percent": round(occupied * 100 / total) if total else 0}
 
@@ -48,7 +50,7 @@ def student_dashboard(request):
 @role_required(Role.WARDEN)
 def warden_dashboard(request):
     hostels = Hostel.objects.filter(wardens=request.user, is_active=True)
-    rooms = list(Room.objects.filter(hostel__in=hostels, is_active=True))
+    rooms = Room.objects.filter(hostel__in=hostels, is_active=True)
     overdue = timezone.now() - timezone.timedelta(hours=72)
     return render(request, "core/warden_dashboard.html", {
         "hostels": hostels, "beds": _bed_summary(rooms),
@@ -60,9 +62,14 @@ def warden_dashboard(request):
 
 @role_required(Role.ADMIN)
 def admin_dashboard(request):
-    rooms = list(Room.objects.filter(is_active=True))
+    hostels = Hostel.objects.filter(is_active=True)
+    rooms = Room.objects.filter(hostel__in=hostels, is_active=True)
+    overdue = timezone.now() - timezone.timedelta(hours=72)
     return render(request, "core/admin_dashboard.html", {
-        "hostel_count": Hostel.objects.filter(is_active=True).count(),
-        "room_count": len(rooms), "beds": _bed_summary(rooms),
-        "pending_applications": RoomApplication.objects.filter(status="PENDING").count(),
+        "hostel_count": hostels.count(),
+        "room_count": rooms.count(), "beds": _bed_summary(rooms),
+        "pending_applications": RoomApplication.objects.filter(status=ApplicationStatus.PENDING).count(),
+        "overdue_complaints": Complaint.objects.filter(
+            room__hostel__is_active=True, status__in=["OPEN", "IN_PROGRESS"], created_at__lt=overdue,
+        ).count(),
     })
