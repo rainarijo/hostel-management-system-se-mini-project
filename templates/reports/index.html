@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Reports | Hostel Management System{% endblock %}
+{% block content %}
+<h1 class="page-title">Reports</h1>
+<p class="page-lede mb-4">Current data for hostels within your authorized scope.</p>
+<div class="row g-3">
+  {% for key, report in reports %}
+  <div class="col-md-6">
+    <div class="panel h-100">
+      <h2 class="h5">{{ report.title }}</h2>
+      <p>{{ report.description }}</p>
+      <a href="{% url 'reports:detail' key %}">Open report</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
