@@ -61,6 +61,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+if env_bool("HMS_SERVER_TIMING"):
+    MIDDLEWARE.insert(1, "apps.core.middleware.ServerTimingMiddleware")
 
 ROOT_URLCONF = "hms.urls"
 

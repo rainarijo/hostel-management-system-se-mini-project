@@ -259,7 +259,8 @@ def approve_room_change_request_view(request, pk):
 def active_allocations(request):
     """FR-5.4: list active allocations in the Warden's assigned hostels."""
     try:
-        allocations = list_active_allocations_for_warden(request.user)
+        allocations = Paginator(list_active_allocations_for_warden(request.user), 50).get_page(
+            request.GET.get("page"))
     except AccessDenied:
         raise PermissionDenied
     return render(request, "allocation/active_allocations.html", {"allocations": allocations})
