@@ -572,30 +572,34 @@ NO_PREFERRED_BED = "No vacant bed of the preferred room types."
 
 
 def _vacant_bed_map(hostel):
-    """Room type -> [(room, bed_no)] of vacant beds, ordered by floor, room number, bed number."""
-    rooms = (Room.objects.filter(hostel=hostel, is_active=True).exclude(status=RoomStatus.MAINTENANCE)
-             .select_related("hostel").order_by("floor", "room_no"))
-    held = set(Allocation.objects.active().filter(room__in=rooms).values_list("room_id", "bed_no"))
+    """Return vacant beds and active roommate rooms for one hostel."""
+    rooms = list(
+        Room.objects.filter(hostel=hostel, is_active=True).exclude(status=RoomStatus.MAINTENANCE)
+        .select_related("hostel").order_by("floor", "room_no")
+    )
+    eligible_room_ids = {room.pk for room in rooms}
+    held = {}
+    roommate_rooms = {}
+    allocations = (Allocation.objects.active().filter(room__hostel=hostel)
+                   .values_list("room_id", "bed_no", "student__srn", "room__room_type"))
+    for room_id, bed_no, srn, room_type in allocations:
+        roommate_rooms[(srn, room_type)] = room_id
+        if room_id in eligible_room_ids:
+            held.setdefault(room_id, set()).add(bed_no)
+
     beds = {t: [] for t in RoomType.values}
     for room in rooms:
-        beds[room.room_type].extend((room, n) for n in range(1, room.capacity + 1) if (room.pk, n) not in held)
-    return beds
+        beds[room.room_type].extend(
+            (room, n) for n in range(1, room.capacity + 1) if n not in held.get(room.pk, set())
+        )
+    return beds, roommate_rooms
 
 
-def _roommate_room_id(application, hostel, room_type):
-    """Room of the preferred roommate in this hostel and room type, if they hold an active allocation."""
-    if not application.preferred_roommate_srn:
-        return None
-    return (Allocation.objects.active()
-            .filter(student__srn=application.preferred_roommate_srn, room__hostel=hostel, room__room_type=room_type)
-            .values_list("room_id", flat=True).first())
-
-
-def _auto_allocate_one(application, hostel, beds, actor):
+def _auto_allocate_one(application, beds, roommate_rooms, actor):
     """Try each preference in order. Returns (allocation, None) or (None, reason)."""
     preferences = [p for p in (application.preference_1, application.preference_2, application.preference_3) if p]
     for pref in preferences:
-        roommate_room = _roommate_room_id(application, hostel, pref)
+        roommate_room = roommate_rooms.get((application.preferred_roommate_srn, pref))
         # Best effort (SAD 4.1.5): the roommate's room first, then the rest in floor/room/bed order.
         ordered = sorted(beds[pref], key=lambda bed: bed[0].pk != roommate_room)
         for room, bed_no in ordered:
@@ -636,10 +640,11 @@ def auto_allocate(hostel, actor):
         # NFR-SAFE-2: only students whose gender matches the hostel are considered.
         pending = _in_queue_order(RoomApplication.objects.filter(status=ApplicationStatus.PENDING,
                                                                  student__gender=hostel.gender_type))
-        beds = _vacant_bed_map(hostel)
+        beds, roommate_rooms = _vacant_bed_map(hostel)
         for application in list(pending):
-            allocation, reason = _auto_allocate_one(application, hostel, beds, actor)
+            allocation, reason = _auto_allocate_one(application, beds, roommate_rooms, actor)
             if allocation:
+                roommate_rooms[(application.student.srn, allocation.room.room_type)] = allocation.room_id
                 allocated.append({"application_no": application.application_no, "srn": application.student.srn,
                                   "room": allocation.room, "bed": allocation.bed_no})
             else:

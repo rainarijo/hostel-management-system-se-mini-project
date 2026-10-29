@@ -86,3 +86,81 @@ python manage.py test           # run all tests
 flake8                          # style check (NFR-MNT-1)
 python manage.py makemigrations # after changing any models.py, then commit the migration file
 ```
+
+### Performance and load tests
+
+Issue #18 sets the interactive-page target at 200 concurrent users: p95 no more than 2 seconds and
+no request over 5 seconds. The SAD also cites the separate SRS targets of an allocation within
+1 second and auto-allocation of 500 applications within 60 seconds. Those allocation targets are
+not interchangeable with the page-response target.
+
+The SAD's OI-5 notes that a 100% under-5-second guarantee cannot be established by a finite load
+test and suggests interpreting that bound as either p99 or the observed maximum. Issue #18 retains
+the explicit 100% acceptance wording, so this harness checks the observed maximum for the run; it
+does not claim a lifetime guarantee. Confirm whether the intended bound is an observed maximum or
+p99 before changing that acceptance criterion.
+
+Run load tests only against a dedicated PostgreSQL/Gunicorn deployment (not the development
+SQLite database or Django's `runserver`). Start with the normal sample accounts, then seed an
+isolated test database with synthetic records:
+
+```powershell
+python manage.py seed_data
+python manage.py seed_performance_data --students 5000 --beds 4000
+```
+
+The performance-data command adds one synthetic hostel and the requested number of students and
+beds, with active allocations, fee records, pending applications, and complaints. Generated
+student accounts are inactive and have unusable passwords. The command refuses to overwrite an
+existing `HMS Load Test Hostel`; use a clean, disposable database and run it only once.
+
+Install Locust separately from the application's runtime dependencies, and enable Django request
+timings on the server:
+
+```powershell
+.venv\Scripts\python.exe -m pip install -r requirements-performance.txt
+$env:HMS_SERVER_TIMING = "1"
+```
+
+From a separate load-generator machine, run the 200-user interactive-page test:
+
+```powershell
+locust -f perf/locustfile.py --host https://<test-host> --users 200 --spawn-rate 10 `
+  --run-time 5m --headless --tags pages --html performance-results.html
+```
+
+The Locust users exercise student, Warden, and Administrator dashboards; student search and
+profiles; allocation queue/options and active allocations; and reports. The test fails with a
+non-zero exit status if client-observed or Django-measured p95 exceeds 2 seconds, a maximum exceeds
+5 seconds, a request fails, or the server timing header is missing. Django timing measures
+middleware-to-response processing; Locust's standard timings additionally include worker queuing
+and network time. Review both sets of results and the per-page Locust statistics.
+
+To measure the SAD's 500-application auto-allocation limit separately, seed an isolated database
+with 1,000 students and 1,000 beds (half are allocated, leaving 500 pending applications and 500
+vacant beds), then run the one-user mode:
+
+```powershell
+python manage.py seed_performance_data --students 1000 --beds 1000
+$env:HMS_LOADTEST_MODE = "auto_allocate"
+locust -f perf/locustfile.py --host https://<test-host> --users 1 --spawn-rate 1 `
+  --run-time 2m --headless --tags auto_allocate
+```
+
+This mode makes one Auto-Allocate request and fails if client or Django processing exceeds
+60 seconds. It changes the test data by allocating pending students, so do not reuse that database
+for a second run. Results from these commands are measurements only when the commands are actually
+run; no performance result is implied by passing the ordinary unit tests.
+
+The SAD's individual-allocation target can also be measured in isolation. Use a fresh scale dataset
+and run one allocation request; this consumes a pending application:
+
+```powershell
+python manage.py seed_performance_data --students 5000 --beds 4000
+$env:HMS_LOADTEST_MODE = "allocation"
+locust -f perf/locustfile.py --host https://<test-host> --users 1 --spawn-rate 1 `
+  --run-time 1m --headless --tags allocation
+```
+
+This mode fails if the individual allocation exceeds 1 second at either the client or Django
+measurement boundary.

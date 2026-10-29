@@ -1,6 +1,8 @@
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -27,7 +29,10 @@ def index(request):
         return redirect("students:profile_detail", profile_id=profile.pk)
 
     if request.user.role == Role.ADMIN:
-        profiles = StudentProfile.objects.select_related("user").all()
+        profiles = Paginator(
+            StudentProfile.objects.only("id", "srn", "name", "program", "year"),
+            50,
+        ).get_page(request.GET.get("page"))
         return render(
             request,
             "students/profile_list.html",
@@ -76,7 +81,7 @@ def search(request):
             room__room_no__icontains=room_no
         )
 
-    profiles = StudentProfile.objects.select_related("user")
+    profiles = StudentProfile.objects.all()
 
     if request.user.role == Role.WARDEN or hostel_id or room_no:
         profiles = profiles.filter(
@@ -91,22 +96,28 @@ def search(request):
     if year.isdigit():
         profiles = profiles.filter(year=int(year))
 
-    profiles = profiles.distinct().order_by("srn")
-    # Build rows with only allocations in the authorized scope.
-    results = []
-    for profile in profiles:
-        results.append({
+    profiles = profiles.distinct().order_by("srn").prefetch_related(
+        Prefetch("allocations", queryset=allocations, to_attr="search_allocations")
+    )
+
+    page = Paginator(profiles, 50).get_page(request.GET.get("page"))
+    results = [
+        {
             "profile": profile,
-            "allocations": list(
-                allocations.filter(student_id=profile.pk)
-            ),
-        })
+            "allocations": profile.search_allocations,
+        }
+        for profile in page
+    ]
+    filters = request.GET.copy()
+    filters.pop("page", None)
 
     return render(
         request,
         "students/search.html",
         {
             "results": results,
+            "page": page,
+            "filters": filters.urlencode(),
             "query": query,
             "hostels": hostels,
             "selected_hostel": hostel_id,
