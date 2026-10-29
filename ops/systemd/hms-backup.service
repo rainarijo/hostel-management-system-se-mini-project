@@ -1,0 +1,11 @@
+[Unit]
+Description=HMS daily database backup (NFR-SAFE-1)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=hms
+WorkingDirectory=/opt/hms
+EnvironmentFile=/etc/hms/hms.env
+ExecStart=/bin/bash /opt/hms/ops/backup.sh
