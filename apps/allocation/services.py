@@ -266,7 +266,7 @@ def allocate(application, room, bed_no, actor):
         # SAD 4.4.4: 4s-wide is non-personal data. Alert when p95 of allocation_ms is above 1000.
         elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
         logger.info(
-            "allocation_created",
+            "allocation created",
             extra={"allocation_ms": elapsed_ms, "allocation_id": allocation.pk},
         )
         return allocation

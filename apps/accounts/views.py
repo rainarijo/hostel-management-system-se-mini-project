@@ -217,7 +217,7 @@ def password_reset_view(request):
                     used_at__isnull=True,
                 ).update(used_at=now)
 
-                AuthToken.objects.create(
+                auth_token = AuthToken.objects.create(
                     user=user,
                     purpose=TokenPurpose.RESET,
                     token_hash=token_hash,
@@ -234,7 +234,7 @@ def password_reset_view(request):
                     PASSWORD_RESET,
                     user.email,
                     {
-                        "entity_id": token_hash,
+                        "entity_id": auth_token.pk,
                         "name": user.first_name or user.email,
                         "reset_url": reset_url,
                     },
