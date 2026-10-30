@@ -15,7 +15,10 @@ from apps.core.exceptions import (AccessDenied, AlreadyAllocated, BedUnavailable
                                   ProfileIncomplete, RoomUnderMaintenance, RunInProgress, ValidationFailure,
                                   WindowClosed)
 from apps.core.sequences import next_number
-from apps.notifications.services import APPLICATION_ALLOCATED, APPLICATION_REJECTED, enqueue
+from apps.notifications.services import (
+    APPLICATION_ALLOCATED, APPLICATION_RECEIVED, APPLICATION_REJECTED,
+    ROOM_CHANGE_APPROVED, ROOM_CHANGE_REJECTED, enqueue,
+)
 from apps.rooms.models import Hostel, Room, RoomStatus, RoomType
 from apps.students.models import StudentProfile
 
@@ -99,7 +102,17 @@ def submit_application(student, preferences, roommate_srn="", request=None):
                        entity_id=application.application_no,
                        new=f"{window.academic_year}: {', '.join(preferences)}; roommate {roommate_srn or '-'}",
                        request=request)
-            # TODO(#30): enqueue APPLICATION_RECEIVED notification
+            enqueue(
+                APPLICATION_RECEIVED,
+                student.user.email,
+                {
+                    "entity_id": application.application_no,
+                    "name": student.name,
+                    "application_no": application.application_no,
+                    "academic_year": application.academic_year,
+                    "preferences": ", ".join(preferences),
+                },
+            )
     except IntegrityError:
         # uniq_application_per_year: a concurrent request saved an application first.
         raise DuplicateApplication()
@@ -240,13 +253,23 @@ def allocate(application, room, bed_no, actor):
         log_action("ALLOCATE", user=actor, entity="allocation", entity_id=allocation.pk, old="application PENDING",
                    new=f"{room} bed {bed_no} {AllocationStatus.PROVISIONAL.label}")
         # FR-4.10: queued in this transaction, so a rollback removes it.
-        enqueue(APPLICATION_ALLOCATED, student.user.email, application.application_no, {
-            "application_no": application.application_no, "hostel": room.hostel.name, "room": room.room_no,
-            "bed": bed_no, "status": AllocationStatus.PROVISIONAL.label})
-    # SAD 4.4.4: ids only, no personal data. Alert when p95 of allocation_ms is above 1000.
-    elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
-    logger.info("allocation created", extra={"allocation_ms": elapsed_ms, "allocation_id": allocation.pk})
-    return allocation
+        enqueue(APPLICATION_ALLOCATED, student.user.email, {
+            "entity_id": application.application_no,
+            "application_no": application.application_no,
+            "hostel": room.hostel.name,
+            "room": room.room_no,
+            "bed": bed_no,
+            "status": AllocationStatus.PROVISIONAL.label,
+            "name": student.name,
+        })
+
+        # SAD 4.4.4: 4s-wide is non-personal data. Alert when p95 of allocation_ms is above 1000.
+        elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+        logger.info(
+            "allocation created",
+            extra={"allocation_ms": elapsed_ms, "allocation_id": allocation.pk},
+        )
+        return allocation
 
 
 def reject(application, reason, actor):
@@ -269,9 +292,13 @@ def reject(application, reason, actor):
         application.save(update_fields=["status", "rejection_reason", "updated_at"])
         log_action("REJECT", user=actor, entity="application", entity_id=application.pk,
                    old="application PENDING", new="application REJECTED")
-        enqueue(APPLICATION_REJECTED, application.student.user.email, application.application_no, {
-            "application_no": application.application_no, "academic_year": application.academic_year,
-            "reason": reason})
+        enqueue(APPLICATION_REJECTED, application.student.user.email, {
+            "entity_id": application.application_no,
+            "application_no": application.application_no,
+            "academic_year": application.academic_year,
+            "reason": reason,
+            "name": application.student.name,
+        })
     return application
 
 
@@ -383,6 +410,15 @@ def reject_room_change_request(change_request, reason, actor):
         log_action("ROOM_CHANGE_REQUEST_REJECTED", user=actor, entity="room_change_request",
                    entity_id=change_request.pk, old=ChangeStatus.PENDING.label,
                    new=f"{ChangeStatus.REJECTED.label}; {reason}")
+        enqueue(
+            ROOM_CHANGE_REJECTED,
+            change_request.student.user.email,
+            {
+                "entity_id": change_request.pk,
+                "name": change_request.student.name,
+                "reason": reason,
+            },
+        )
     return change_request
 
 
@@ -502,6 +538,18 @@ def approve_room_change_request(change_request, room, bed_no, actor, request=Non
             new=(f"allocation {old_allocation.pk} ended; allocation {replacement.pk} "
                  f"created at {destination} bed {bed_no}; fee total {fee_record.total_amount}"),
             request=request,
+        )
+        enqueue(
+            ROOM_CHANGE_APPROVED,
+            change_request.student.user.email,
+            {
+                "entity_id": change_request.pk,
+                "name": change_request.student.name,
+                "hostel": destination.hostel.name,
+                "room": destination.room_no,
+                "bed": bed_no,
+                "status": replacement.get_status_display(),
+            },
         )
     return replacement
 

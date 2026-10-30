@@ -1,0 +1,5 @@
+Hello {{ name }},
+
+Your hostel room application {{ application_no }} for academic year {{ academic_year }} has been received.
+
+Preferences: {{ preferences }}

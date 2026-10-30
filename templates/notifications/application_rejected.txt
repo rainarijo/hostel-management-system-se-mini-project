@@ -1,0 +1,5 @@
+Hello {{ name }},
+
+Application {{ application_no }} for academic year {{ academic_year }} was rejected.
+
+Reason: {{ reason }}

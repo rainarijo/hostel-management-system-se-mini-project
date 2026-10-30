@@ -1,0 +1,10 @@
+[Unit]
+Description=Run HMS notification dispatcher every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Unit=hms-notifications.service
+
+[Install]
+WantedBy=timers.target

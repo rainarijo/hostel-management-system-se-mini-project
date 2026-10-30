@@ -1,0 +1,6 @@
+Hello {{ name }},
+
+Please verify your Hostel Management System account using this link:
+{{ verification_url }}
+
+This link expires in 24 hours.

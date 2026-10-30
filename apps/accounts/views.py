@@ -1,12 +1,9 @@
-
 import hashlib
 import secrets
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.core.mail import send_mail
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -15,6 +12,8 @@ from django.views.decorators.http import require_GET, require_POST
 
 from django.core.cache import cache
 from django.views.decorators.http import require_http_methods
+
+from apps.notifications.services import ACCOUNT_VERIFICATION, PASSWORD_RESET, enqueue
 
 from .forms import PasswordResetRequestForm, PasswordResetConfirmForm
 from apps.core.permissions import role_required
@@ -114,26 +113,22 @@ def register_view(request):
                     ).hexdigest(),
                     expires_at=timezone.now() + timedelta(hours=24),
                 )
+                verification_url = request.build_absolute_uri(
+                    reverse("accounts:verify_email", args=[raw_token])
+                )
+                enqueue(
+                    ACCOUNT_VERIFICATION,
+                    master.email,
+                    {
+                        "entity_id": user.pk,
+                        "name": master.name,
+                        "verification_url": verification_url,
+                    },
+                )
 
         except Exception:
             # Keep unexpected database errors visible during development.
             raise
-
-        verification_url = request.build_absolute_uri(
-            reverse("accounts:verify_email", args=[raw_token])
-        )
-        send_mail(
-            subject="Verify your Hostel Management System account",
-            message=(
-                f"Hello {master.name},\n\n"
-                "Please verify your account using this link:\n"
-                f"{verification_url}\n\n"
-                "This link expires in 24 hours."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[master.email],
-            fail_silently=False,
-        )
 
         messages.success(
             request,
@@ -222,7 +217,7 @@ def password_reset_view(request):
                     used_at__isnull=True,
                 ).update(used_at=now)
 
-                AuthToken.objects.create(
+                auth_token = AuthToken.objects.create(
                     user=user,
                     purpose=TokenPurpose.RESET,
                     token_hash=token_hash,
@@ -235,17 +230,14 @@ def password_reset_view(request):
                         args=[raw_token],
                     )
                 )
-
-                send_mail(
-                    subject="Reset your Hostel Management System password",
-                    message=(
-                        "A password reset was requested for your account.\n\n"
-                        f"Use this one-time link within 30 minutes:\n{reset_url}\n\n"
-                        "If you did not request this, you can ignore this email."
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
+                enqueue(
+                    PASSWORD_RESET,
+                    user.email,
+                    {
+                        "entity_id": auth_token.pk,
+                        "name": user.first_name or user.email,
+                        "reset_url": reset_url,
+                    },
                 )
 
         # Same response for existing and unknown email addresses.

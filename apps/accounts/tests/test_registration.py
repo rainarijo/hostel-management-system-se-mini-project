@@ -1,8 +1,8 @@
-
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -34,6 +34,11 @@ class RegistrationTests(TestCase):
 
     def register_student(self):
         response = self.client.post(self.url, self.data)
+
+        # Issue #30 queues verification mail in the same transaction as
+        # registration. Dispatch it before inspecting the test mail backend.
+        call_command("send_pending_notifications")
+
         user = User.objects.get(email=self.student.email)
         token = AuthToken.objects.get(
             user=user,

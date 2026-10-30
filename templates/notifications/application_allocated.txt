@@ -1,0 +1,7 @@
+Hello {{ name }},
+
+Application {{ application_no }} has been allocated.
+Hostel: {{ hostel }}
+Room: {{ room }}
+Bed: {{ bed }}
+Status: {{ status }}

@@ -1,0 +1,5 @@
+Hello {{ name }},
+
+Your room change request was rejected.
+
+Reason: {{ reason }}
