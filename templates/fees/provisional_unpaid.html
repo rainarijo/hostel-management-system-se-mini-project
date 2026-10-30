@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Provisional Unpaid Allocations - Hostel Management{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Provisional allocations with no payment after 15 days</h1>
+
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Student</th><th>Hostel</th><th>Room / Bed</th>
+        <th>Allocated</th><th class="text-end">Balance</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for allocation in page %}
+      <tr>
+        <td>{{ allocation.student.name }}<br><small>{{ allocation.student.srn }}</small></td>
+        <td>{{ allocation.room.hostel.name }}</td>
+        <td>{{ allocation.room.room_no }} / {{ allocation.bed_no }}</td>
+        <td>{{ allocation.created_at|date:"d-m-Y" }}</td>
+        <td class="text-end">INR {{ allocation.fee_record.balance|floatformat:2 }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-primary"
+             href="{% url 'fees:payment' allocation.pk %}">Record payment</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-muted">No matching provisional allocations.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<nav aria-label="Provisional allocation pages">
+  <ul class="pagination">
+    {% if page.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+    {% if page.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -28,13 +28,12 @@
     <div class="table-responsive">
       <table class="table table-sm align-middle mb-0">
         <thead>
-          <tr><th scope="col">Receipt</th><th scope="col">Date</th><th scope="col">Mode</th>
-              <th scope="col" class="text-end">Amount</th></tr>
+          <tr><th>Receipt</th><th>Date</th><th>Mode</th><th class="text-end">Amount</th></tr>
         </thead>
         <tbody>
         {% for p in fee.payments.all %}
           <tr>
-            <td>{{ p.receipt_no }}</td>
+            <td><a href="{% url 'fees:receipt' p.receipt_no %}">{{ p.receipt_no }}</a></td>
             <td>{{ p.paid_on|date:"d-m-Y" }}</td>
             <td>{{ p.get_mode_display }}</td>
             <td class="text-end">INR {{ p.amount|floatformat:2 }}</td>
