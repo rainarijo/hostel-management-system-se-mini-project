@@ -1,13 +1,16 @@
-
 import hashlib
+from datetime import timedelta
+
 from django.core import mail
 from django.core.cache import cache
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from apps.students.models import StudentProfile
+
 from apps.accounts.models import AuthToken, TokenPurpose, User
-from datetime import timedelta
+from apps.students.models import StudentProfile
+
 
 PASSWORD = "Strongpass2026"
 
@@ -32,7 +35,14 @@ class PasswordResetTests(TestCase):
         self.request_url = reverse("accounts:password_reset")
 
     def request_reset(self, email):
-        return self.client.post(self.request_url, {"email": email})
+        response = self.client.post(
+            self.request_url,
+            {"email": email},
+        )
+        # Issue #30 queues the reset mail. Dispatch it explicitly in tests
+        # before asserting against the locmem mail backend.
+        call_command("send_pending_notifications")
+        return response
 
     def get_token_from_email(self):
         self.assertEqual(len(mail.outbox), 1)

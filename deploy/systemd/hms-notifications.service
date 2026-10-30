@@ -1,0 +1,10 @@
+[Unit]
+Description=HMS pending notification dispatcher
+After=network.target
+
+[Service]
+Type=oneshot
+User=hms
+WorkingDirectory=/opt/hostel-management-system-se-mini-project
+Environment=DJANGO_SETTINGS_MODULE=hms.settings
+ExecStart=/opt/hostel-management-system-se-mini-project/.venv/bin/python manage.py send_pending_notifications --limit 100

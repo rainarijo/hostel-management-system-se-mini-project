@@ -1,0 +1,8 @@
+Hello {{ name }},
+
+Your room change request has been approved.
+
+New hostel: {{ hostel }}
+New room: {{ room }}
+New bed: {{ bed }}
+Allocation status: {{ status }}

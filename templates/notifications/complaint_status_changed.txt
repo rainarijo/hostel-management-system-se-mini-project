@@ -1,0 +1,5 @@
+Hello {{ name }},
+
+Complaint {{ complaint_no }} status changed from {{ old_status }} to {{ new_status }}.
+
+Remark: {{ remark }}
