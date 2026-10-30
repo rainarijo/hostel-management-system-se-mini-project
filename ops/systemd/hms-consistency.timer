@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the HMS consistency check daily at 01:30 IST
+
+[Timer]
+OnCalendar=*-*-* 01:30:00 Asia/Kolkata
+Persistent=true
+Unit=hms-consistency.service
+
+[Install]
+WantedBy=timers.target
