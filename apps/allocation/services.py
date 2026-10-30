@@ -271,6 +271,7 @@ def allocate(application, room, bed_no, actor):
         )
         return allocation
 
+
 def reject(application, reason, actor):
     """FR-4.8: reject a pending application with a reason of at least 10 characters."""
     with transaction.atomic():
