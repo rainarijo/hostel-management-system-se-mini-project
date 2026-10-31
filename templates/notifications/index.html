@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Announcements | Hostel Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Announcements</h1>
+    {% if is_warden %}
+      <p class="text-muted mb-0">Current announcements for your active hostels.</p>
+    {% elif allocation %}
+      <p class="text-muted mb-0">Current announcements for {{ allocation.room.hostel.name }}.</p>
+    {% else %}
+      <p class="text-muted mb-0">Announcements for your allocated hostel.</p>
+    {% endif %}
+  </div>
+  {% if is_warden %}
+    <a class="btn btn-primary" href="{% url 'notifications:post_announcement' %}">Post announcement</a>
+  {% endif %}
+</div>
+
+{% if announcements %}
+  <div class="row g-3">
+    {% for announcement in announcements %}
+      <div class="col-12">
+        <article class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between gap-3 flex-wrap">
+              <h2 class="h5 mb-2">{{ announcement.title }}</h2>
+              <span class="text-muted small">Expires {{ announcement.expiry_date|date:"d M Y" }}</span>
+            </div>
+            {% if is_warden %}
+              <div class="text-muted small mb-2">{{ announcement.hostel.name }}</div>
+            {% endif %}
+            <p class="mb-0">{{ announcement.body|linebreaksbr }}</p>
+          </div>
+        </article>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info" role="status">No current announcements.</div>
+{% endif %}
+{% endblock %}

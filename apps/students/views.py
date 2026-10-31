@@ -1,7 +1,7 @@
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.http import FileResponse, Http404
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -9,12 +9,14 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.models import Role
 from apps.core.audit import log_action
 from apps.core.permissions import role_required
+from apps.core.exceptions import ObjectNotFound
 from django.db.models import Q
 
 from apps.allocation.models import Allocation, AllocationStatus
 from apps.rooms.models import Hostel
 from .forms import StudentProfileForm
 from .models import StudentProfile
+from .services import build_profile_pdf, get_authorized_profile, secure_photo_path
 
 
 @login_required
@@ -246,3 +248,36 @@ def profile_edit(request, profile_id):
         "students/profile_form.html",
         {"form": form, "profile": profile},
     )
+
+
+@login_required
+@role_required(Role.STUDENT, Role.ADMIN)
+def profile_photo(request, profile_id):
+    """Serve a profile photograph only to the owning student or an admin."""
+    try:
+        profile = get_authorized_profile(request.user, profile_id)
+        photo_path = secure_photo_path(profile)
+    except ObjectNotFound as exc:
+        raise Http404("Profile photograph not found.") from exc
+
+    content_type = "image/png" if photo_path.suffix.lower() == ".png" else "image/jpeg"
+    response = FileResponse(photo_path.open("rb"), content_type=content_type)
+    response["Content-Disposition"] = "inline"
+    return response
+
+
+@login_required
+@role_required(Role.STUDENT, Role.ADMIN)
+def profile_export_pdf(request, profile_id):
+    """Download the authorized student's profile and allocation data as PDF."""
+    try:
+        profile = get_authorized_profile(request.user, profile_id)
+    except ObjectNotFound as exc:
+        raise Http404("Student profile not found.") from exc
+
+    response = FileResponse(
+        __import__("io").BytesIO(build_profile_pdf(profile)),
+        content_type="application/pdf",
+    )
+    response["Content-Disposition"] = f'attachment; filename="profile-{profile.srn}.pdf"'
+    return response

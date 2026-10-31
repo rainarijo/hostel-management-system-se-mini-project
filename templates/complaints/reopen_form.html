@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Reopen complaint {{ complaint.complaint_no }}</h1>
+    <p>
+        This will change the complaint from
+        <strong>{{ complaint.get_status_display }}</strong> to
+        <strong>Open</strong>.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+            {{ form.confirm }}
+            {{ form.confirm.label_tag }}
+            {{ form.confirm.errors }}
+        </div>
+        <button type="submit" class="btn btn-warning">Reopen complaint</button>
+        <a href="{% url 'complaints:index' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

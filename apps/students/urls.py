@@ -16,5 +16,15 @@ urlpatterns = [
         views.profile_edit,
         name="profile_edit",
     ),
+    path(
+        "profile/<int:profile_id>/photo/",
+        views.profile_photo,
+        name="profile_photo",
+    ),
+    path(
+        "profile/<int:profile_id>/export.pdf",
+        views.profile_export_pdf,
+        name="profile_export_pdf",
+    ),
     path("search/", views.search, name="search"),
 ]

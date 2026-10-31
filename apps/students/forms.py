@@ -1,7 +1,10 @@
+from uuid import uuid4
 
 from django import forms
 
 from .models import StudentProfile
+from PIL import Image
+
 from .profile_validators import (
     validate_mobile_number,
     validate_permanent_address,
@@ -65,6 +68,10 @@ class StudentProfileForm(forms.ModelForm):
         )
 
     def clean_photo(self):
-        return validate_profile_photo(
-            self.cleaned_data.get("photo")
-        )
+        photo = validate_profile_photo(self.cleaned_data.get("photo"))
+        if photo:
+            image = Image.open(photo)
+            image_format = image.format.lower()
+            photo.name = f"{uuid4().hex}.{image_format}"
+            photo.seek(0)
+        return photo

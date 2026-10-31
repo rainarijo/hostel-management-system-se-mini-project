@@ -164,3 +164,312 @@ class AuditLogRetentionTests(TestCase):
         self.assertTrue(
             AuditLog.objects.filter(pk=recent_entry.pk).exists()
         )
+
+
+# ---------------------------------------------------------------------------
+# TC-20: SEC-REQ-4 server-side authorisation, no IDOR (STP 5.1). See docs/SECURITY_AUDIT.md.
+# ---------------------------------------------------------------------------
+
+# Routes anyone may open without logging in (SRS FR-1.1, FR-1.2, FR-1.6).
+PUBLIC_URLS = {
+    "accounts:login",
+    "accounts:register",
+    "accounts:verify_email",
+    "accounts:password_reset",
+    "accounts:password_reset_confirm",
+}
+# Not public, but answers an anonymous caller with a JSON 401 instead of a login redirect.
+API_URLS = {"room_availability_api"}
+
+
+def _all_routes():
+    """(route name, URL) for every named route, Django admin excluded. 999999 for ints, 'X' for strings."""
+    from django.urls import URLResolver, get_resolver
+    from django.urls.converters import IntConverter
+
+    def walk(patterns, namespace=None):
+        for p in patterns:
+            if isinstance(p, URLResolver):
+                if str(p.pattern).startswith(("django-admin", "static", "media")):
+                    continue
+                yield from walk(p.url_patterns, p.namespace or namespace)
+            elif p.name:
+                name = f"{namespace}:{p.name}" if namespace else p.name
+                kwargs = {k: 999999 if isinstance(c, IntConverter) else "X"
+                          for k, c in p.pattern.converters.items()}
+                yield name, reverse(name, kwargs=kwargs)
+
+    return sorted(set(walk(get_resolver().url_patterns)))
+
+
+class RouteInventoryTests(TestCase):
+    def test_tc20_every_non_public_route_requires_login(self):
+        """Anonymous GET of every route must redirect to login (302) or be refused as a GET (405).
+
+        PUBLIC_URLS allowlist (no login needed): accounts:login, accounts:register, accounts:verify_email,
+        accounts:password_reset, accounts:password_reset_confirm.
+        API_URLS (JSON 401 for anonymous callers): room_availability_api.
+        There is no healthz or "registration done" route in hms/urls.py.
+        """
+        login_url = reverse("accounts:login")
+        routes = _all_routes()
+        self.assertGreater(len(routes), 50)
+        for name, url in routes:
+            if name in PUBLIC_URLS:
+                continue
+            with self.subTest(route=name, url=url):
+                resp = self.client.get(url)
+                if name in API_URLS:
+                    self.assertEqual(resp.status_code, 401)
+                elif resp.status_code == 302:
+                    self.assertTrue(resp["Location"].startswith(login_url), resp["Location"])
+                else:
+                    self.assertEqual(resp.status_code, 405)
+
+    def test_tc20_allowlists_name_real_routes(self):
+        names = {name for name, _ in _all_routes()}
+        self.assertLessEqual(PUBLIC_URLS | API_URLS, names)
+
+
+def _make_student(email, srn, gender="M", name=None):
+    from apps.students.models import StudentProfile
+
+    user = User.objects.create_user(email, PASSWORD, role=Role.STUDENT)
+    return StudentProfile.objects.create(user=user, srn=srn, name=name or srn, gender=gender,
+                                         program="B.Tech CSE", year=2)
+
+
+class RoleMatrixTests(TestCase):
+    """BR-1: each role is refused (403) on pages outside its role; every refusal is logged."""
+
+    def setUp(self):
+        from apps.allocation.models import ApplicationWindow, RoomApplication
+        from apps.rooms.models import Hostel, Room
+
+        self.student = _make_student("student.a@hms.local", "PES1UG24CS001")
+        self.warden = User.objects.create_user("warden.boys@hms.local", PASSWORD, role=Role.WARDEN)
+        self.admin = User.objects.create_user("admin@hms.local", PASSWORD, role=Role.ADMIN)
+        self.hostel = Hostel.objects.create(name="Cauvery Block", gender_type="M")
+        self.hostel.wardens.add(self.warden)
+        self.room = Room.objects.create(hostel=self.hostel, room_no="101", floor=1, room_type="SINGLE", capacity=1,
+                                        annual_fee=80000)
+        self.window = ApplicationWindow.objects.create(academic_year="2026-2027", start_date=timezone.localdate(),
+                                                       end_date=timezone.localdate())
+        self.application = RoomApplication.objects.create(student=self.student, academic_year="2026-2027",
+                                                          preference_1="SINGLE", application_no="APP-2026-00001")
+
+    def staff_urls(self):
+        """Warden + Admin pages (BR-1 'Warden and Admin')."""
+        return [
+            reverse("allocation:queue"),
+            reverse("allocation:allocate", args=[self.application.pk]),
+            reverse("allocation:change_request_queue"),
+            reverse("allocation:history_manage"),
+            reverse("rooms:index"),
+            reverse("rooms:room_grid"),
+            reverse("students:search"),
+            reverse("fees:provisional_unpaid"),
+            reverse("reports:index"),
+            reverse("reports:detail", args=["occupancy"]),
+            reverse("reports:export", args=["occupancy", "csv"]),
+            reverse("core:warden_dashboard"),
+        ]
+
+    def admin_urls(self):
+        """Admin-only pages (BR-1 'Admin only')."""
+        return [
+            reverse("allocation:window_list"),
+            reverse("allocation:window_create"),
+            reverse("allocation:window_edit", args=[self.window.pk]),
+            reverse("rooms:hostel_create"),
+            reverse("rooms:hostel_edit", args=[self.hostel.pk]),
+            reverse("rooms:room_create"),
+            reverse("rooms:room_edit", args=[self.room.pk]),
+            reverse("room_import"),
+            reverse("accounts:account_list"),
+            reverse("accounts:account_create"),
+            reverse("core:admin_dashboard"),
+        ]
+
+    def test_tc20_student_gets_403_on_warden_and_admin_pages(self):
+        self.client.login(email="student.a@hms.local", password=PASSWORD)
+        for url in self.staff_urls() + self.admin_urls():
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+        # POST-only Admin actions are refused too, before any change is made.
+        for url in (reverse("accounts:account_change_role", args=[self.admin.pk]),
+                    reverse("accounts:account_deactivate", args=[self.admin.pk]),
+                    reverse("rooms:hostel_deactivate", args=[self.hostel.pk]),
+                    reverse("allocation:auto_allocate")):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.post(url, {"hostel_id": self.hostel.pk}).status_code, 403)
+        self.hostel.refresh_from_db()
+        self.assertTrue(self.hostel.is_active)
+
+    def test_tc20_student_cannot_view_audit_log(self):
+        # The audit log is only reachable through the Django admin (superuser Administrators, see AuditLogAdmin).
+        self.client.login(email="student.a@hms.local", password=PASSWORD)
+        resp = self.client.get("/django-admin/core/auditlog/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/django-admin/login/", resp["Location"])
+
+    def test_tc20_warden_gets_403_on_admin_only_pages(self):
+        self.client.login(email="warden.boys@hms.local", password=PASSWORD)
+        for url in self.admin_urls():
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_tc20_staff_pages_open_for_warden(self):
+        # Guards the matrix itself: the 403s above come from the role, not from a broken page.
+        self.client.login(email="warden.boys@hms.local", password=PASSWORD)
+        for url in self.staff_urls():
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_tc20_role_denial_is_logged_without_personal_data(self):
+        self.client.login(email="student.a@hms.local", password=PASSWORD)
+        with self.assertLogs("hms.security", level="WARNING") as logs:
+            self.client.get(reverse("allocation:queue"), {"q": "secret-query"})
+        record = logs.records[0]
+        self.assertEqual(record.levelname, "WARNING")
+        self.assertEqual(record.security_event, "role_denied")
+        self.assertEqual(record.user_id, self.student.user.pk)
+        self.assertEqual((record.method, record.path), ("GET", reverse("allocation:queue")))
+        text = logs.output[0]
+        for leak in ("student.a@hms.local", "secret-query", PASSWORD, "sessionid"):
+            self.assertNotIn(leak, text)
+        self.assertTrue(AuditLog.objects.filter(action="ACCESS_DENIED").exists())
+
+
+class IdorTests(TestCase):
+    """STP 5.1: changing the id in a URL never exposes another student's data."""
+
+    def setUp(self):
+        from apps.allocation.models import Allocation, RoomApplication
+        from apps.complaints.models import Complaint
+        from apps.fees.models import Payment
+        from apps.rooms.models import Hostel, Room
+
+        self.a = _make_student("student.a@hms.local", "PES1UG24CS001", name="Asha Rao")
+        self.b = _make_student("student.b@hms.local", "PES1UG24CS002", name="Bharat Iyer")
+        self.girl = _make_student("student.g@hms.local", "PES1UG24CS003", gender="F", name="Gita Nair")
+        self.warden_boys = User.objects.create_user("warden.boys@hms.local", PASSWORD, role=Role.WARDEN)
+        admin = User.objects.create_user("admin@hms.local", PASSWORD, role=Role.ADMIN)
+        boys = Hostel.objects.create(name="Cauvery Block", gender_type="M")
+        boys.wardens.add(self.warden_boys)
+        Hostel.objects.create(name="Kaveri Block", gender_type="F")
+        room = Room.objects.create(hostel=boys, room_no="101", floor=1, room_type="DOUBLE", capacity=2,
+                                   annual_fee=80000)
+
+        self.b_application = RoomApplication.objects.create(
+            student=self.b, academic_year="2026-2027", preference_1="DOUBLE", application_no="APP-2026-00002",
+            status="ALLOCATED")
+        self.girl_application = RoomApplication.objects.create(
+            student=self.girl, academic_year="2026-2027", preference_1="SINGLE", application_no="APP-2026-00003")
+        b_allocation = Allocation.objects.create(student=self.b, room=room, bed_no=1, application=self.b_application,
+                                                 start_date=timezone.localdate())
+        self.b_complaint = Complaint.objects.create(student=self.b, room=room, category="ELECTRICAL",
+                                                    description="Fan not working.", status="RESOLVED",
+                                                    resolved_at=timezone.now())
+        self.b_payment = Payment.objects.create(fee_record=b_allocation.fee_record, receipt_no="RCP-2026-00001",
+                                                amount=1000, mode="CASH", paid_on=timezone.localdate(),
+                                                recorded_by=admin)
+
+    def login_a(self):
+        self.client.login(email="student.a@hms.local", password=PASSWORD)
+
+    def assert_no_leak(self, resp):
+        for secret in ("Bharat Iyer", "PES1UG24CS002"):
+            self.assertNotIn(secret.encode(), resp.content)
+
+    def test_tc20_student_cannot_open_other_students_application(self):
+        self.login_a()
+        with self.assertLogs("hms.security", level="WARNING") as logs:
+            resp = self.client.get(reverse("allocation:application_detail", args=["APP-2026-00002"]))
+        self.assertEqual(resp.status_code, 404)
+        self.assert_no_leak(resp)
+        self.assertEqual(logs.records[0].security_event, "not_found")
+
+    def test_tc20_student_cannot_reopen_other_students_complaint(self):
+        self.login_a()
+        resp = self.client.post(reverse("complaints:reopen", args=[self.b_complaint.complaint_no]))
+        self.assertEqual(resp.status_code, 404)
+        self.b_complaint.refresh_from_db()
+        self.assertEqual(self.b_complaint.status, "RESOLVED")
+
+    def test_tc20_student_cannot_download_other_students_receipt(self):
+        # SEC-REQ-4 wants 404 here; fees currently answers 403 (docs/SECURITY_AUDIT.md, problem F-1).
+        self.login_a()
+        with self.assertLogs("hms.security", level="WARNING"):
+            resp = self.client.get(reverse("fees:receipt", args=[self.b_payment.receipt_no]))
+        self.assertIn(resp.status_code, (403, 404))
+        self.assertNotEqual(resp.get("Content-Type"), "application/pdf")
+        self.assert_no_leak(resp)
+
+    def test_tc20_student_cannot_open_other_students_profile(self):
+        self.login_a()
+        for name in ("students:profile_photo", "students:profile_export_pdf"):
+            with self.subTest(route=name):
+                resp = self.client.get(reverse(name, args=[self.b.pk]))
+                self.assertEqual(resp.status_code, 404)
+                self.assert_no_leak(resp)
+        # SEC-REQ-4 wants 404 here; students currently answers 403 (docs/SECURITY_AUDIT.md, problem S-1).
+        for name in ("students:profile_detail", "students:profile_edit"):
+            with self.subTest(route=name):
+                resp = self.client.get(reverse(name, args=[self.b.pk]))
+                self.assertIn(resp.status_code, (403, 404))
+                self.assert_no_leak(resp)
+
+    def test_tc20_boys_warden_cannot_open_girls_application(self):
+        self.client.login(email="warden.boys@hms.local", password=PASSWORD)
+        with self.assertLogs("hms.security", level="WARNING") as logs:
+            resp = self.client.get(reverse("allocation:allocate", args=[self.girl_application.pk]))
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotIn(b"Gita Nair", resp.content)
+        self.assertEqual(logs.records[0].security_event, "not_found")
+        self.assertEqual(logs.records[0].user_id, self.warden_boys.pk)
+        resp = self.client.post(reverse("allocation:reject", args=[self.girl_application.pk]),
+                                {"reason": "Trying another hostel's student."})
+        self.assertEqual(resp.status_code, 404)
+        self.girl_application.refresh_from_db()
+        self.assertEqual(self.girl_application.status, "PENDING")
+
+
+class SecurityLoggingTests(TestCase):
+    def test_tc20_scope_exceptions_become_403_404_and_tokens_are_redacted(self):
+        from django.core.exceptions import PermissionDenied
+        from django.http import Http404
+
+        from apps.core.exceptions import AccessDenied, ObjectNotFound
+        from apps.core.permissions import role_required
+
+        admin = User.objects.create_user("admin@hms.local", PASSWORD, role=Role.ADMIN)
+        request = RequestFactory().get("/accounts/verify/abc123token/")
+        request.user = admin
+        request.resolver_match = type("Match", (), {"kwargs": {"token": "abc123token"}})()
+
+        for raised, expected in ((AccessDenied, PermissionDenied), (ObjectNotFound, Http404)):
+            @role_required(Role.ADMIN)
+            def view(req, token):
+                raise raised()
+
+            with self.subTest(raised=raised.__name__):
+                with self.assertLogs("hms.security", level="WARNING") as logs, self.assertRaises(expected):
+                    view(request, token="abc123token")
+                self.assertNotIn("abc123token", logs.output[0])
+                self.assertIn("/accounts/verify/<redacted>/", logs.output[0])
+
+    def test_tc20_view_returning_403_is_logged(self):
+        from django.http import HttpResponse
+
+        from apps.core.permissions import role_required
+
+        @role_required(Role.ADMIN)
+        def view(req):
+            return HttpResponse("Forbidden", status=403)
+
+        request = RequestFactory().get("/fees/payments/RCP-2026-00001/receipt.pdf")
+        request.user = User.objects.create_user("admin@hms.local", PASSWORD, role=Role.ADMIN)
+        with self.assertLogs("hms.security", level="WARNING") as logs:
+            self.assertEqual(view(request).status_code, 403)
+        self.assertEqual(logs.records[0].security_event, "forbidden")

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Record Fee Payment - Hostel Management{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Record fee payment</h1>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <p class="mb-1"><strong>Student:</strong> {{ allocation.student.name }} ({{ allocation.student.srn }})</p>
+    <p class="mb-1"><strong>Hostel / Room / Bed:</strong>
+      {{ allocation.room.hostel.name }} / {{ allocation.room.room_no }} / {{ allocation.bed_no }}
+    </p>
+    <p class="mb-0"><strong>Outstanding balance:</strong>
+      INR {{ fee.balance|floatformat:2 }}
+    </p>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  {% for field in form %}
+    {% if field.name != "submission_id" %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% for error in field.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endfor %}
+  {{ form.submission_id }}
+
+  <button class="btn btn-primary" type="submit">Record payment</button>
+  <a class="btn btn-secondary" href="{% url 'fees:index' %}">Cancel</a>
+</form>
+{% endblock %}

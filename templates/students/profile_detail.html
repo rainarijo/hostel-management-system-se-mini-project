@@ -21,8 +21,12 @@
 </dl>
 
 {% if profile.photo %}
-  <img src="{{ profile.photo.url }}" alt="Profile photograph" width="160">
+  <img src="{% url 'students:profile_photo' profile.pk %}"
+       alt="Profile photograph" width="160">
 {% endif %}
 
-<a class="btn btn-primary" href="{% url 'students:profile_edit' profile.pk %}">Edit profile</a>
+<div class="mt-3">
+  <a class="btn btn-primary" href="{% url 'students:profile_edit' profile.pk %}">Edit profile</a>
+  <a class="btn btn-outline-secondary" href="{% url 'students:profile_export_pdf' profile.pk %}">Download profile PDF</a>
+</div>
 {% endblock %}

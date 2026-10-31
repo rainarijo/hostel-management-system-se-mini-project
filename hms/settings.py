@@ -29,8 +29,13 @@ def env_bool(name, default=False):
     return os.environ.get(name, str(default)).lower() in ("1", "true", "yes")
 
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key-change-me")
+DEV_SECRET_KEY = "dev-only-insecure-key-change-me"     # placeholder for local DEBUG runs, not a secret
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", DEV_SECRET_KEY)
 DEBUG = env_bool("DJANGO_DEBUG", True)
+if not DEBUG and SECRET_KEY == DEV_SECRET_KEY:
+    # SEC-REQ-10: a server must never run on the publicly known placeholder key.
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("Set DJANGO_SECRET_KEY in the environment when DJANGO_DEBUG is off.")
 ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
 
 INSTALLED_APPS = [
