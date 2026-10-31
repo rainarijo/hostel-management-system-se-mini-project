@@ -27,6 +27,7 @@
     {% if fee.payments.all %}
     <div class="table-responsive">
       <table class="table table-sm align-middle mb-0">
+        <caption class="visually-hidden">Payment history</caption>
         <thead>
           <tr><th scope="col">Receipt</th><th scope="col">Date</th><th scope="col">Mode</th>
               <th scope="col" class="text-end">Amount</th></tr>
@@ -56,3 +57,4 @@
 <div class="alert alert-info" role="alert">You do not have a room allocation yet, so there are no dues to show.</div>
 {% endfor %}
 {% endblock %}
+

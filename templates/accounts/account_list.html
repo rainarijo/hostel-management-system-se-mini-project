@@ -6,8 +6,9 @@
 <p><a class="btn btn-primary" href="{% url 'accounts:account_create' %}">Create privileged account</a></p>
 <div class="table-responsive">
 <table class="table table-striped">
+<caption class="visually-hidden">Account administration</caption>
 <thead>
-<tr><th>Email</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+<tr><th scope="col">Email</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr>
 </thead>
 <tbody>
 {% for account in users %}
@@ -42,3 +43,4 @@
 </table>
 </div>
 {% endblock %}
+

@@ -23,7 +23,7 @@
     <a class="btn btn-primary" href="{% url 'allocation:application_detail' existing.application_no %}">View application</a>
   </div>
 {% elif not student or not student.is_complete %}
-  <div class="alert alert-warning">Complete your profile before you apply for a room. <a href="{% url 'students:index' %}">Update profile</a></div>
+  <div class="alert alert-warning" role="alert">Complete your profile before you apply for a room. <a href="{% url 'students:index' %}">Update profile</a></div>
 {% else %}
   <div class="row g-3">
     <div class="col-lg-7">
@@ -71,3 +71,4 @@
   </div>
 {% endif %}
 {% endblock %}
+

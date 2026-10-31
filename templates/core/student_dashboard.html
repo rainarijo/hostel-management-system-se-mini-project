@@ -4,7 +4,7 @@
 <p class="page-lede mb-4">{% if profile %}{{ profile.srn }} &middot; {{ profile.program }}, year {{ profile.year }}{% else %}Your student profile isn't set up yet. Contact the hostel office.{% endif %}</p>
 
 {% if profile and not profile.is_complete %}
-  <div class="alert alert-warning">Complete your profile before you apply for a room. <a href="{% url 'students:index' %}">Update profile</a></div>
+  <div class="alert alert-warning" role="alert">Complete your profile before you apply for a room. <a href="{% url 'students:index' %}">Update profile</a></div>
 {% endif %}
 
 <div class="row g-3">
@@ -42,3 +42,4 @@
   </div>
 </div>
 {% endblock %}
+

@@ -12,14 +12,14 @@
     <div class="mb-3">
       <label for="id_email" class="form-label">E-mail <span aria-hidden="true">*</span></label>
       <input type="email" name="email" id="id_email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
-             value="{{ form.email.value|default:'' }}" autocomplete="email" required autofocus>
-      {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+             value="{{ form.email.value|default:'' }}" autocomplete="email" required autofocus aria-invalid="{% if form.email.errors %}true{% else %}false{% endif %}" aria-describedby="id_email_errors">
+      {% if form.email.errors %}<div id="id_email_errors" class="invalid-feedback">{{ form.email.errors|join:" " }}</div>{% endif %}
     </div>
     <div class="mb-3">
       <label for="id_password" class="form-label">Password <span aria-hidden="true">*</span></label>
       <input type="password" name="password" id="id_password" class="form-control {% if form.password.errors %}is-invalid{% endif %}"
-             autocomplete="current-password" required>
-      {% for e in form.password.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+             autocomplete="current-password" required aria-invalid="{% if form.password.errors %}true{% else %}false{% endif %}" aria-describedby="id_password_errors">
+      {% if form.password.errors %}<div id="id_password_errors" class="invalid-feedback">{{ form.password.errors|join:" " }}</div>{% endif %}
     </div>
     <button type="submit" class="btn btn-brass w-100">Log in</button>
     <div class="d-flex justify-content-between mt-3 small">
@@ -29,3 +29,4 @@
   </form>
 </div>
 {% endblock %}
+

@@ -5,8 +5,9 @@
 
 <div class="table-responsive">
 <table class="table table-striped">
+  <caption class="visually-hidden">Student profiles</caption>
   <thead>
-    <tr><th>SRN</th><th>Name</th><th>Programme</th><th>Year</th><th>Action</th></tr>
+    <tr><th scope="col">SRN</th><th scope="col">Name</th><th scope="col">Programme</th><th scope="col">Year</th><th scope="col">Action</th></tr>
   </thead>
   <tbody>
   {% for profile in profiles %}
@@ -41,3 +42,4 @@
   </nav>
 {% endif %}
 {% endblock %}
+
