@@ -17,7 +17,7 @@
   <div class="table-responsive">
     <table class="table align-middle mb-0">
       <caption class="visually-hidden">Applications allocated in this run</caption>
-      <thead><tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Room</th><th scope="col">Bed</th></tr></thead>
+      <th scope="col"ead><tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Room</th><th scope="col">Bed</th></tr></thead>
       <tbody>
         {% for row in summary.allocated %}
         <tr><td>{{ row.application_no }}</td><td>{{ row.srn }}</td><td>{{ row.room.room_no }} ({{ row.room.get_room_type_display }})</td><td>{{ row.bed }}</td></tr>
@@ -37,7 +37,7 @@
   <div class="table-responsive">
     <table class="table align-middle mb-0">
       <caption class="visually-hidden">Applications not allocated in this run, with reasons</caption>
-      <thead><tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Reason</th></tr></thead>
+      <th scope="col"ead><tr><th scope="col">Application</th><th scope="col">SRN</th><th scope="col">Reason</th></tr></thead>
       <tbody>
         {% for row in summary.unallocated %}
         <tr><td>{{ row.application_no }}</td><td>{{ row.srn }}</td><td>{{ row.reason }}</td></tr>
@@ -53,3 +53,4 @@
 
 <a class="btn btn-outline-secondary mt-3" href="{% url 'allocation:queue' %}">Back to queue</a>
 {% endblock %}
+

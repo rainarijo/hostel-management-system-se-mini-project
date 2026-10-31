@@ -40,8 +40,8 @@
   <div class="table-responsive">
     <table class="table align-middle mb-0">
       <caption class="visually-hidden">Room capacity, occupancy and vacancies</caption>
-      <thead><tr><th>Hostel</th><th>Room</th><th>Floor</th><th>Type</th>
-        <th>Capacity</th><th>Occupied</th><th>Vacant</th><th>Status</th></tr></thead>
+      <thead><tr><th scope="col">Hostel</th><th scope="col">Room</th><th scope="col">Floor</th><th scope="col">Type</th>
+        <th scope="col">Capacity</th><th scope="col">Occupied</th><th scope="col">Vacant</th><th scope="col">Status</th></tr></thead>
       <tbody>
         {% for room in rooms %}
         <tr><td>{{ room.hostel_name }}</td><td>{{ room.room_no }}</td><td>{{ room.floor }}</td>
@@ -56,3 +56,4 @@
   {% endif %}
 </section>
 {% endblock %}
+

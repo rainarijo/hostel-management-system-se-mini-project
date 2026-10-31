@@ -23,7 +23,7 @@
     <div class="table-responsive">
       <table class="table align-middle mb-0">
         <caption class="visually-hidden">Allocation history showing rooms, beds, dates and ending reasons</caption>
-        <thead>
+        <th scope="col"ead>
           <tr>
             {% if not is_student_view %}<th scope="col">Student</th>{% endif %}
             <th scope="col">Room</th><th scope="col">Bed</th><th scope="col">Start date</th>
@@ -69,3 +69,4 @@
   {% endif %}
 </section>
 {% endblock %}
+

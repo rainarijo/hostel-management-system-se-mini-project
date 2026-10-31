@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="{% static 'css/hms.css' %}">
 </head>
 <body class="d-flex flex-column min-vh-100">
-<nav class="navbar navbar-expand-lg navbar-dark hms-nav">
+<a class="visually-hidden-focusable skip-link" href="#main-content">Skip to main content</a>
+<nav class="navbar navbar-expand-lg navbar-dark hms-nav" aria-label="Primary navigation">
   <div class="container">
     <a class="navbar-brand" href="{% url 'core:home' %}">Hostel Management</a>
     {% if user.is_authenticated %}
@@ -60,7 +61,7 @@
   </div>
 </nav>
 
-<main class="container py-4 flex-grow-1">
+<main id="main-content" class="container py-4 flex-grow-1" tabindex="-1">
   {% for message in messages %}
     <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
       {{ message }}
@@ -73,9 +74,10 @@
 <footer class="border-top py-3">
   <div class="container d-flex flex-wrap justify-content-between gap-2">
     <span>Hostel office: hostel.office@university.edu &middot; Mon-Sat, 9:00-17:00</span>
-    <a href="#">Help</a>
+    <a href="mailto:hostel.office@university.edu">Contact hostel office</a>
   </div>
 </footer>
 <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
 </body>
 </html>
+
