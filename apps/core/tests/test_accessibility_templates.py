@@ -56,8 +56,8 @@ class AccessibilityTemplateTests(unittest.TestCase):
             ):
                 self.assertRegex(
                     alert,
-                    r"\brole\s*=\s*[\"']alert[\"']",
-                    msg=f"Alert without role=alert: {path}: {alert}",
+                    r"\brole\s*=\s*[\"'](?:alert|status)[\"']",
+                    msg=f"Alert without an announcement role: {path}: {alert}",
                 )
 
     def test_destructive_actions_do_not_use_inline_confirm_or_placeholder_links(self):

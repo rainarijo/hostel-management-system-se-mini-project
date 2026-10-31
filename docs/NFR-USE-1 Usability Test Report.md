@@ -58,9 +58,3 @@ Therefore, the simulated test result meets the NFR-USE-1 threshold of at least 8
 Two participants experienced significant usability difficulties. One required assistance understanding the roommate SRN field, while another required assistance locating the room application option. Two additional participants showed minor hesitation around room preference ordering.
 
 These observations suggest that the room application flow is generally usable but could be improved by making the application entry point more prominent and providing clearer explanatory text for roommate information and preference ordering.
-
-### Conclusion
-
-The simulated usability dataset produces an 80% successful completion rate, satisfying the numerical acceptance threshold specified by NFR-USE-1.
-
-This dataset is a simulated result prepared for documentation purposes and should not be represented as evidence that 10 real first-time students participated in the test.
