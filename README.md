@@ -122,6 +122,10 @@ timings on the server:
 $env:HMS_SERVER_TIMING = "1"
 ```
 
+Do not use Django's development server with the default SQLite database for performance acceptance
+tests. Use an isolated, production-like application server and database; the local SQLite default
+and per-request session writes can become bottlenecks under concurrent load.
+
 From a separate load-generator machine, run the 200-user interactive-page test:
 
 ```powershell
