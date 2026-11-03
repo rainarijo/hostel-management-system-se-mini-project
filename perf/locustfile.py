@@ -1,5 +1,6 @@
 import os
 import re
+from urllib.parse import urlsplit
 
 from locust import HttpUser, between, constant, events, task, tag
 
@@ -81,10 +82,26 @@ class HMSUser(HttpUser):
     wait_time = between(1, 3)
 
     def login(self, email):
-        login_page = self.client.get("/accounts/login/", name="Setup login form")
-        csrf_token = self.client.cookies.get("csrftoken")
+        login_page = self.client.get(
+            "/accounts/login/",
+            name="Setup login form",
+            allow_redirects=True,
+        )
+        if login_page.status_code != 200:
+            raise RuntimeError(
+                "Unable to load the login form "
+                f"(HTTP {login_page.status_code} at {login_page.url})."
+            )
+
+        csrf_token = login_page.cookies.get("csrftoken")
         if not csrf_token:
-            raise RuntimeError("The login page did not set a CSRF cookie.")
+            csrf_token = self.client.cookies.get("csrftoken")
+        if not csrf_token:
+            raise RuntimeError(
+                "The login form response did not set a CSRF cookie "
+                f"(HTTP {login_page.status_code} at {login_page.url})."
+            )
+
         response = self.client.post(
             "/accounts/login/",
             {"email": email, "password": PASSWORD},
@@ -92,8 +109,18 @@ class HMSUser(HttpUser):
             name="Setup login",
             allow_redirects=True,
         )
-        if response.status_code >= 400 or 'id_password' in response.text:
-            raise RuntimeError(f"Unable to log in as {email} (HTTP {response.status_code}).")
+        login_path = urlsplit(login_page.url).path
+        response_path = urlsplit(response.url).path
+        if (
+            response.status_code >= 400
+            or not response.history
+            or response_path == login_path
+            or "id_password" in response.text
+        ):
+            raise RuntimeError(
+                f"Unable to log in as {email} "
+                f"(HTTP {response.status_code}, final URL {response.url})."
+            )
 
     def get_page(self, path, name):
         with self.client.get(path, name=name, catch_response=True) as response:
