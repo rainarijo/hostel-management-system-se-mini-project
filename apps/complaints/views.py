@@ -82,36 +82,36 @@ def change_complaint_status(request, complaint_no):
     complaints = _warden_scope(Complaint.objects.all(), request.user)
     complaint = get_object_or_404(complaints, complaint_no=complaint_no)
 
-    if request.method != "POST":
-        raise Http404
-
-    form = ComplaintStatusForm(
-        request.POST,
-        current_status=complaint.status,
-    )
-    if form.is_valid():
-        try:
-            change_status(
-                complaint,
-                form.cleaned_data["status"],
-                form.cleaned_data["remark"],
-                request.user,
-                request=request,
-            )
-        except InvalidComplaintTransition as exc:
-            form.add_error(None, str(exc))
-        else:
-            messages.success(
-                request,
-                f"Complaint {complaint.complaint_no} updated.",
-            )
-            return redirect("complaints:index")
+    if request.method == "POST":
+        form = ComplaintStatusForm(
+            request.POST,
+            current_status=complaint.status,
+        )
+        if form.is_valid():
+            try:
+                change_status(
+                    complaint,
+                    form.cleaned_data["status"],
+                    form.cleaned_data["remark"],
+                    request.user,
+                    request=request,
+                )
+            except InvalidComplaintTransition as exc:
+                form.add_error(None, str(exc))
+            else:
+                messages.success(
+                    request,
+                    f"Complaint {complaint.complaint_no} updated.",
+                )
+                return redirect("complaints:index")
+    else:
+        form = ComplaintStatusForm(current_status=complaint.status)
 
     return render(
         request,
         "complaints/status_form.html",
         {"complaint": complaint, "form": form},
-        status=400,
+        status=400 if request.method == "POST" else 200,
     )
 
 
