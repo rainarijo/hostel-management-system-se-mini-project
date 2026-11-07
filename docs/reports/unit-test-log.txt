@@ -1,0 +1,557 @@
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+Found 373 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: messages, staticfiles
+  Apply all migrations: accounts, admin, allocation, auth, complaints, contenttypes, core, fees, notifications, rooms, sessions, students
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying accounts.0001_initial... OK
+  Applying accounts.0002_authtoken... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying students.0001_initial... OK
+  Applying students.0002_studentprofile_privacy_ack_at... OK
+  Applying rooms.0001_initial... OK
+  Applying rooms.0002_remove_room_unique_room_no_per_hostel_and_more... OK
+  Applying allocation.0001_initial... OK
+  Applying allocation.0002_autoallocaterun_remove_roomchangerequest_allocation_and_more... OK
+  Applying allocation.0003_roomchangerequest... OK
+  Applying complaints.0001_initial... OK
+  Applying core.0001_initial... OK
+  Applying core.0002_documentsequence... OK
+  Applying fees.0001_initial... OK
+  Applying fees.0002_feerecord_academic_year_payment_submission_id_and_more... OK
+  Applying notifications.0001_initial... OK
+  Applying notifications.0002_notificationoutbox... OK
+test_failure_window_resets_old_failed_attempts (apps.accounts.tests.test_login.LoginTests.test_failure_window_resets_old_failed_attempts) ... ok
+test_inactive_user_cannot_log_in (apps.accounts.tests.test_login.LoginTests.test_inactive_user_cannot_log_in) ... ok
+test_login_form_csrf_cookie_supports_valid_login (apps.accounts.tests.test_login.LoginTests.test_login_form_csrf_cookie_supports_valid_login) ... ok
+test_logout_requires_post_and_ends_session (apps.accounts.tests.test_login.LoginTests.test_logout_requires_post_and_ends_session) ... ok
+test_successful_login_resets_failed_attempts (apps.accounts.tests.test_login.LoginTests.test_successful_login_resets_failed_attempts) ... ok
+test_tc02_same_error_for_unknown_email_and_wrong_password (apps.accounts.tests.test_login.LoginTests.test_tc02_same_error_for_unknown_email_and_wrong_password) ... ok
+test_tc02_valid_login_redirects_to_dashboard (apps.accounts.tests.test_login.LoginTests.test_tc02_valid_login_redirects_to_dashboard) ... ok
+test_tc03_account_locks_after_five_failures (apps.accounts.tests.test_login.LoginTests.test_tc03_account_locks_after_five_failures) ... ok
+test_expired_token_is_rejected (apps.accounts.tests.test_password_reset.PasswordResetTests.test_expired_token_is_rejected) ... ok
+test_password_containing_srn_is_rejected_on_reset (apps.accounts.tests.test_password_reset.PasswordResetTests.test_password_containing_srn_is_rejected_on_reset) ... ok
+test_password_mismatch_does_not_change_password (apps.accounts.tests.test_password_reset.PasswordResetTests.test_password_mismatch_does_not_change_password) ... ok
+test_request_sends_reset_email_to_active_user (apps.accounts.tests.test_password_reset.PasswordResetTests.test_request_sends_reset_email_to_active_user) ... ok
+test_reset_request_is_limited_to_five_per_email_per_hour (apps.accounts.tests.test_password_reset.PasswordResetTests.test_reset_request_is_limited_to_five_per_email_per_hour) ... ok
+test_reset_token_changes_password_and_cannot_be_reused (apps.accounts.tests.test_password_reset.PasswordResetTests.test_reset_token_changes_password_and_cannot_be_reused) ... ok
+test_unknown_email_gets_same_public_response (apps.accounts.tests.test_password_reset.PasswordResetTests.test_unknown_email_gets_same_public_response) ... ok
+test_duplicate_registration_is_rejected (apps.accounts.tests.test_registration.RegistrationTests.test_duplicate_registration_is_rejected) ... ok
+test_expired_verification_token_does_not_activate_account (apps.accounts.tests.test_registration.RegistrationTests.test_expired_verification_token_does_not_activate_account) ... ok
+test_password_containing_srn_is_rejected (apps.accounts.tests.test_registration.RegistrationTests.test_password_containing_srn_is_rejected) ... ok
+test_unknown_srn_or_mismatched_email_is_rejected (apps.accounts.tests.test_registration.RegistrationTests.test_unknown_srn_or_mismatched_email_is_rejected) ... ok
+test_valid_registration_creates_inactive_account_and_profile (apps.accounts.tests.test_registration.RegistrationTests.test_valid_registration_creates_inactive_account_and_profile) ... ok
+test_valid_verification_activates_account_once (apps.accounts.tests.test_registration.RegistrationTests.test_valid_verification_activates_account_once) ... ok
+test_account_creation_rejects_duplicate_email (apps.accounts.tests.test_role_management.AccountManagementTests.test_account_creation_rejects_duplicate_email) ... ok
+test_account_creation_rejects_invalid_role (apps.accounts.tests.test_role_management.AccountManagementTests.test_account_creation_rejects_invalid_role) ... ok
+test_account_creation_rejects_mismatched_passwords (apps.accounts.tests.test_role_management.AccountManagementTests.test_account_creation_rejects_mismatched_passwords) ... ok
+test_account_list_displays_role_choices (apps.accounts.tests.test_role_management.AccountManagementTests.test_account_list_displays_role_choices) ... ok
+test_admin_can_change_account_role (apps.accounts.tests.test_role_management.AccountManagementTests.test_admin_can_change_account_role) ... ok
+test_admin_can_create_admin_account (apps.accounts.tests.test_role_management.AccountManagementTests.test_admin_can_create_admin_account) ... ok
+test_admin_can_create_warden_account (apps.accounts.tests.test_role_management.AccountManagementTests.test_admin_can_create_warden_account) ... ok
+test_admin_can_deactivate_another_account (apps.accounts.tests.test_role_management.AccountManagementTests.test_admin_can_deactivate_another_account) ... ok
+test_admin_cannot_deactivate_own_account (apps.accounts.tests.test_role_management.AccountManagementTests.test_admin_cannot_deactivate_own_account) ... ok
+test_deactivation_requires_post (apps.accounts.tests.test_role_management.AccountManagementTests.test_deactivation_requires_post) ... ok
+test_invalid_role_is_rejected (apps.accounts.tests.test_role_management.AccountManagementTests.test_invalid_role_is_rejected) ... ok
+test_last_active_admin_cannot_be_deactivated (apps.accounts.tests.test_role_management.AccountManagementTests.test_last_active_admin_cannot_be_deactivated) ... ok
+test_last_active_admin_cannot_be_demoted (apps.accounts.tests.test_role_management.AccountManagementTests.test_last_active_admin_cannot_be_demoted) ... ok
+test_non_admin_cannot_change_role (apps.accounts.tests.test_role_management.AccountManagementTests.test_non_admin_cannot_change_role) ... security_event=role_denied user_id=2 method=POST path=/accounts/manage/3/role/ reason=role WARDEN not in ADMIN
+ok
+test_non_admin_cannot_create_account (apps.accounts.tests.test_role_management.AccountManagementTests.test_non_admin_cannot_create_account) ... security_event=role_denied user_id=2 method=POST path=/accounts/manage/create/ reason=role WARDEN not in ADMIN
+ok
+test_non_admin_cannot_deactivate_account (apps.accounts.tests.test_role_management.AccountManagementTests.test_non_admin_cannot_deactivate_account) ... security_event=role_denied user_id=2 method=POST path=/accounts/manage/3/deactivate/ reason=role WARDEN not in ADMIN
+ok
+test_only_admin_can_view_account_list (apps.accounts.tests.test_role_management.AccountManagementTests.test_only_admin_can_view_account_list) ... security_event=role_denied user_id=3 method=GET path=/accounts/manage/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/accounts/manage/ reason=role WARDEN not in ADMIN
+ok
+test_role_change_requires_post (apps.accounts.tests.test_role_management.AccountManagementTests.test_role_change_requires_post) ... ok
+test_login_rotates_session_key (apps.accounts.tests.test_session_security.SessionSecurityTests.test_login_rotates_session_key) ... ok
+test_logout_invalidates_session (apps.accounts.tests.test_session_security.SessionSecurityTests.test_logout_invalidates_session) ... ok
+test_session_age_is_thirty_minutes (apps.accounts.tests.test_session_security.SessionSecurityTests.test_session_age_is_thirty_minutes) ... ok
+test_session_cookie_security_settings (apps.accounts.tests.test_session_security.SessionSecurityTests.test_session_cookie_security_settings) ... ok
+test_sessions_are_saved_on_each_request (apps.accounts.tests.test_session_security.SessionSecurityTests.test_sessions_are_saved_on_each_request) ... ok
+test_expired_token_is_invalid (apps.accounts.tests.test_tokens.AuthTokenTests.test_expired_token_is_invalid) ... ok
+test_fresh_token_is_valid (apps.accounts.tests.test_tokens.AuthTokenTests.test_fresh_token_is_valid) ... ok
+test_used_token_is_invalid (apps.accounts.tests.test_tokens.AuthTokenTests.test_used_token_is_invalid) ... ok
+test_tc09_already_allocated_student_rejected (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_already_allocated_student_rejected) ... ok
+test_tc09_bed_number_outside_capacity_rejected (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_bed_number_outside_capacity_rejected) ... ok
+test_tc09_candidate_beds_exclude_held_maintenance_and_other_gender (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_candidate_beds_exclude_held_maintenance_and_other_gender) ... ok
+test_tc09_candidate_beds_put_preferred_room_type_first (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_candidate_beds_put_preferred_room_type_first) ... ok
+test_tc09_failing_signal_receiver_rolls_back (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_failing_signal_receiver_rolls_back) ... ok
+test_tc09_gender_mismatch_rejected (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_gender_mismatch_rejected) ... ok
+test_tc09_maintenance_room_rejected (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_maintenance_room_rejected) ... ok
+test_tc09_student_gets_403 (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_student_gets_403) ... security_event=role_denied user_id=2 method=GET path=/applications/1/allocate/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_tc09_view_success_redirects_to_queue (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_view_success_redirects_to_queue) ... ok
+test_tc09_warden_allocates_vacant_bed (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_warden_allocates_vacant_bed) ... ok
+test_tc09_warden_cannot_allocate_room_in_other_wardens_hostel (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_warden_cannot_allocate_room_in_other_wardens_hostel) ... security_event=not_found user_id=1 method=POST path=/applications/1/allocate/ reason=object not found or outside the user's scope
+ok
+test_tc09_warden_outside_scope_gets_404 (apps.allocation.tests.test_allocate.AllocateTests.test_tc09_warden_outside_scope_gets_404) ... security_event=not_found user_id=3 method=GET path=/applications/1/allocate/ reason=object not found or outside the user's scope
+security_event=not_found user_id=3 method=POST path=/applications/1/allocate/ reason=object not found or outside the user's scope
+ok
+test_tc10_constraint_still_protects_when_precheck_fails (apps.allocation.tests.test_allocate.AllocateTests.test_tc10_constraint_still_protects_when_precheck_fails) ... ok
+test_tc10_second_allocation_of_same_bed_raises_bed_unavailable (apps.allocation.tests.test_allocate.AllocateTests.test_tc10_second_allocation_of_same_bed_raises_bed_unavailable) ... ok
+test_tc10_view_shows_bed_no_longer_available_with_409 (apps.allocation.tests.test_allocate.AllocateTests.test_tc10_view_shows_bed_no_longer_available_with_409) ... ok
+test_fr55_administrator_can_view_allocation_history_across_hostels (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_administrator_can_view_allocation_history_across_hostels) ... ok
+test_fr55_ended_checkout_allocation_remains_available_to_student (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_ended_checkout_allocation_remains_available_to_student) ... ok
+test_fr55_student_cannot_access_staff_history (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_student_cannot_access_staff_history) ... security_event=role_denied user_id=3 method=GET path=/manage/allocation-history/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_fr55_student_history_is_fixed_to_authenticated_student (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_student_history_is_fixed_to_authenticated_student) ... ok
+test_fr55_student_sees_own_current_and_ended_allocation_details (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_student_sees_own_current_and_ended_allocation_details) ... ok
+test_fr55_student_without_allocations_gets_empty_state (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_student_without_allocations_gets_empty_state) ... ok
+test_fr55_warden_cannot_access_history_outside_hostel_scope (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_warden_cannot_access_history_outside_hostel_scope) ... ok
+test_fr55_warden_search_remains_limited_to_authorized_hostels (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_warden_search_remains_limited_to_authorized_hostels) ... ok
+test_fr55_warden_sees_allocation_history_within_hostel_scope (apps.allocation.tests.test_allocation_history.AllocationHistoryTests.test_fr55_warden_sees_allocation_history_within_hostel_scope) ... ok
+test_tc08_application_outside_window_rejected (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_application_outside_window_rejected) ... ok
+test_tc08_complete_profile_can_apply_and_gets_number (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_complete_profile_can_apply_and_gets_number) ... ok
+test_tc08_duplicate_preferences_rejected (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_duplicate_preferences_rejected) ... ok
+test_tc08_incomplete_profile_rejected (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_incomplete_profile_rejected) ... ok
+test_tc08_second_application_rejected (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_second_application_rejected) ... ok
+test_tc08_student_gets_404_on_another_students_application (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_student_gets_404_on_another_students_application) ... security_event=not_found user_id=2 method=GET path=/applications/APP-2026-00001/ reason=object not found or outside the user's scope
+ok
+test_tc08_unknown_or_own_roommate_srn_rejected (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_unknown_or_own_roommate_srn_rejected) ... ok
+test_tc08_vacancy_counts_gender_matching_and_skip_maintenance (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_vacancy_counts_gender_matching_and_skip_maintenance) ... ok
+test_tc08_warden_and_admin_get_403 (apps.allocation.tests.test_apply.ApplyForRoomTests.test_tc08_warden_and_admin_get_403) ... security_event=role_denied user_id=2 method=GET path=/applications/apply/ reason=role WARDEN not in STUDENT
+security_event=role_denied user_id=3 method=GET path=/applications/apply/ reason=role ADMIN not in STUDENT
+ok
+test_tc11_allocates_in_priority_order (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_allocates_in_priority_order) ... ok
+test_tc11_bed_taken_mid_run_moves_to_next_bed (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_bed_taken_mid_run_moves_to_next_bed) ... ok
+test_tc11_get_returns_405 (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_get_returns_405) ... ok
+test_tc11_maintenance_rooms_skipped (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_maintenance_rooms_skipped) ... ok
+test_tc11_other_gender_applications_untouched (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_other_gender_applications_untouched) ... ok
+test_tc11_roommate_given_bed_earlier_in_same_run (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_roommate_given_bed_earlier_in_same_run) ... ok
+test_tc11_roommate_room_tried_first (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_roommate_room_tried_first) ... ok
+test_tc11_run_row_done_with_counts (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_run_row_done_with_counts) ... ok
+test_tc11_second_run_while_running_raises_run_in_progress (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_second_run_while_running_raises_run_in_progress) ... ok
+test_tc11_student_gets_403 (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_student_gets_403) ... security_event=role_denied user_id=2 method=POST path=/applications/auto-allocate/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_tc11_unallocated_listed_and_stay_pending (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_unallocated_listed_and_stay_pending) ... ok
+test_tc11_unexpected_error_marks_run_failed (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_unexpected_error_marks_run_failed) ... ok
+test_tc11_uses_highest_available_preference (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_uses_highest_available_preference) ... ok
+test_tc11_view_run_in_progress_shows_banner_409 (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_view_run_in_progress_shows_banner_409) ... ok
+test_tc11_view_shows_summary (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_view_shows_summary) ... ok
+test_tc11_warden_outside_scope_gets_404 (apps.allocation.tests.test_auto_allocate.AutoAllocateTests.test_tc11_warden_outside_scope_gets_404) ... security_event=not_found user_id=1 method=POST path=/applications/auto-allocate/ reason=object not found or outside the user's scope
+security_event=not_found user_id=1 method=POST path=/applications/auto-allocate/ reason=object not found or outside the user's scope
+ok
+test_nfr_rel1_admins_notified_on_finding (apps.allocation.tests.test_consistency.ConsistencyCheckTests.test_nfr_rel1_admins_notified_on_finding) ... ok
+test_nfr_rel1_clean_database_reports_ok (apps.allocation.tests.test_consistency.ConsistencyCheckTests.test_nfr_rel1_clean_database_reports_ok) ... ok
+test_nfr_rel1_detects_double_booked_bed (apps.allocation.tests.test_consistency.ConsistencyCheckTests.test_nfr_rel1_detects_double_booked_bed) ... ok
+test_nfr_rel1_detects_room_status_mismatch (apps.allocation.tests.test_consistency.ConsistencyCheckTests.test_nfr_rel1_detects_room_status_mismatch) ... ok
+test_nfr_rel1_maintenance_room_not_a_mismatch (apps.allocation.tests.test_consistency.ConsistencyCheckTests.test_nfr_rel1_maintenance_room_not_a_mismatch) ... ok
+test_nfr_rel1_no_email_flag_sends_nothing (apps.allocation.tests.test_consistency.ConsistencyCheckTests.test_nfr_rel1_no_email_flag_sends_nothing) ... ok
+test_nfr_safe1_ops_files_present (apps.allocation.tests.test_consistency.OpsFilesTests.test_nfr_safe1_ops_files_present) ... ok
+test_ended_allocation_frees_the_bed (apps.allocation.tests.test_constraints.AllocationConstraintTests.test_ended_allocation_frees_the_bed) ... ok
+test_room_status_becomes_full_at_capacity (apps.allocation.tests.test_constraints.AllocationConstraintTests.test_room_status_becomes_full_at_capacity) ... ok
+test_tc10_same_bed_cannot_be_allocated_twice (apps.allocation.tests.test_constraints.AllocationConstraintTests.test_tc10_same_bed_cannot_be_allocated_twice) ... ok
+test_tc10_student_cannot_hold_two_active_allocations (apps.allocation.tests.test_constraints.AllocationConstraintTests.test_tc10_student_cannot_hold_two_active_allocations) ... ok
+test_nfr_perf2_allocation_under_one_second (apps.allocation.tests.test_perf.AllocationPerformanceTests.test_nfr_perf2_allocation_under_one_second) ... ok
+test_active_allocation_list_is_paginated (apps.allocation.tests.test_performance.ActiveAllocationListScalabilityTests.test_active_allocation_list_is_paginated) ... ok
+test_fr44_26_applications_paginate_into_25_and_1 (apps.allocation.tests.test_queue.QueueTests.test_fr44_26_applications_paginate_into_25_and_1) ... ok
+test_fr44_admin_sees_all (apps.allocation.tests.test_queue.QueueTests.test_fr44_admin_sees_all) ... ok
+test_fr44_boys_warden_does_not_see_female_student (apps.allocation.tests.test_queue.QueueTests.test_fr44_boys_warden_does_not_see_female_student) ... ok
+test_fr44_girls_warden_does_not_see_male_student (apps.allocation.tests.test_queue.QueueTests.test_fr44_girls_warden_does_not_see_male_student) ... ok
+test_fr44_only_pending_listed (apps.allocation.tests.test_queue.QueueTests.test_fr44_only_pending_listed) ... ok
+test_fr44_ordering_year1_then_priority_then_others_oldest_first (apps.allocation.tests.test_queue.QueueTests.test_fr44_ordering_year1_then_priority_then_others_oldest_first) ... ok
+test_fr44_student_gets_403 (apps.allocation.tests.test_queue.QueueTests.test_fr44_student_gets_403) ... security_event=role_denied user_id=4 method=GET path=/applications/queue/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_fr44_warden_without_hostels_sees_nothing (apps.allocation.tests.test_queue.QueueTests.test_fr44_warden_without_hostels_sees_nothing) ... ok
+test_fr44_year_and_room_type_filters (apps.allocation.tests.test_queue.QueueTests.test_fr44_year_and_room_type_filters) ... ok
+test_fr410_allocate_enqueues_allocated_email (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr410_allocate_enqueues_allocated_email) ... ok
+test_fr410_failed_allocation_enqueues_nothing (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr410_failed_allocation_enqueues_nothing) ... ok
+test_fr48_cannot_reject_non_pending (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_cannot_reject_non_pending) ... ok
+test_fr48_short_reason_rejected (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_short_reason_rejected) ... ok
+test_fr48_student_gets_403 (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_student_gets_403) ... security_event=role_denied user_id=2 method=POST path=/applications/1/reject/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_fr48_student_sees_rejection_reason (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_student_sees_rejection_reason) ... ok
+test_fr48_view_non_pending_shows_banner_409 (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_view_non_pending_shows_banner_409) ... ok
+test_fr48_view_short_reason_shows_field_error_200 (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_view_short_reason_shows_field_error_200) ... ok
+test_fr48_view_success_redirects_to_queue (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_view_success_redirects_to_queue) ... ok
+test_fr48_warden_outside_scope_gets_404 (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_warden_outside_scope_gets_404) ... security_event=not_found user_id=3 method=POST path=/applications/1/reject/ reason=object not found or outside the user's scope
+ok
+test_fr48_warden_rejects_with_reason (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr48_warden_rejects_with_reason) ... ok
+test_fr49_confirm_provisional_allocation (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr49_confirm_provisional_allocation) ... ok
+test_fr49_confirm_twice_raises_invalid_transition (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr49_confirm_twice_raises_invalid_transition) ... ok
+test_fr49_student_sees_allocation_status (apps.allocation.tests.test_reject_confirm.RejectConfirmTests.test_fr49_student_sees_allocation_status) ... ok
+test_fr52_approval_ends_old_allocation_and_creates_replacement (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_approval_ends_old_allocation_and_creates_replacement) ... ok
+test_fr52_bed_outside_capacity_is_rejected (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_bed_outside_capacity_is_rejected) ... ok
+test_fr52_both_room_statuses_are_recomputed (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_both_room_statuses_are_recomputed) ... ok
+test_fr52_database_constraint_protects_against_concurrent_bed_claim (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_database_constraint_protects_against_concurrent_bed_claim) ... ok
+test_fr52_failure_after_fee_move_rolls_back_allocation_and_destination_bed (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_failure_after_fee_move_rolls_back_allocation_and_destination_bed) ... ok
+test_fr52_failure_during_replacement_creation_rolls_back_old_allocation (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_failure_during_replacement_creation_rolls_back_old_allocation) ... ok
+test_fr52_fee_record_and_payments_are_preserved_and_total_is_updated (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_fee_record_and_payments_are_preserved_and_total_is_updated) ... ok
+test_fr52_gender_mismatch_is_rejected (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_gender_mismatch_is_rejected) ... ok
+test_fr52_insufficient_payment_keeps_replacement_provisional (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_insufficient_payment_keeps_replacement_provisional) ... ok
+test_fr52_non_pending_request_cannot_be_approved (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_non_pending_request_cannot_be_approved) ... ok
+test_fr52_student_and_out_of_scope_warden_are_denied (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_student_and_out_of_scope_warden_are_denied) ... security_event=role_denied user_id=3 method=POST path=/manage/room-change-requests/1/approve/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=not_found user_id=4 method=POST path=/manage/room-change-requests/1/approve/ reason=object not found or outside the user's scope
+ok
+test_fr52_unavailable_bed_is_rejected_without_ending_old_allocation (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_unavailable_bed_is_rejected_without_ending_old_allocation) ... ok
+test_fr52_warden_approval_view_selects_destination_bed (apps.allocation.tests.test_room_change_approval_checkout.AtomicRoomChangeTests.test_fr52_warden_approval_view_selects_destination_bed) ... ok
+test_fr54_active_allocation_list_is_visible_to_assigned_warden (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_active_allocation_list_is_visible_to_assigned_warden) ... ok
+test_fr54_admin_is_not_authorized_to_check_out (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_admin_is_not_authorized_to_check_out) ... ok
+test_fr54_authorized_warden_checks_out_student_and_releases_bed (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_authorized_warden_checks_out_student_and_releases_bed) ... ok
+test_fr54_checkout_date_before_allocation_start_is_rejected (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_checkout_date_before_allocation_start_is_rejected) ... ok
+test_fr54_checkout_view_rejects_future_date (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_checkout_view_rejects_future_date) ... ok
+test_fr54_failed_room_refresh_rolls_back_checkout (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_failed_room_refresh_rolls_back_checkout) ... ok
+test_fr54_future_checkout_date_is_rejected (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_future_checkout_date_is_rejected) ... ok
+test_fr54_inactive_allocation_is_not_in_warden_checkout_list (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_inactive_allocation_is_not_in_warden_checkout_list) ... ok
+test_fr54_repeated_checkout_is_rejected (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_repeated_checkout_is_rejected) ... ok
+test_fr54_student_cannot_checkout_and_out_of_scope_warden_cannot_view (apps.allocation.tests.test_room_change_approval_checkout.CheckOutTests.test_fr54_student_cannot_checkout_and_out_of_scope_warden_cannot_view) ... security_event=role_denied user_id=2 method=POST path=/manage/allocations/1/check-out/ reason=role STUDENT not in WARDEN
+security_event=not_found user_id=3 method=GET path=/manage/allocations/1/check-out/ reason=object not found or outside the user's scope
+ok
+test_fr51_30_day_wait_is_enforced_from_allocation_start (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_30_day_wait_is_enforced_from_allocation_start) ... ok
+test_fr51_exactly_30_days_of_occupancy_is_eligible (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_exactly_30_days_of_occupancy_is_eligible) ... ok
+test_fr51_reason_longer_than_300_characters_is_rejected (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_reason_longer_than_300_characters_is_rejected) ... ok
+test_fr51_reason_shorter_than_ten_characters_is_rejected (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_reason_shorter_than_ten_characters_is_rejected) ... ok
+test_fr51_second_pending_request_is_rejected (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_second_pending_request_is_rejected) ... ok
+test_fr51_student_with_confirmed_allocation_can_submit_request (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_student_with_confirmed_allocation_can_submit_request) ... ok
+test_fr51_student_without_confirmed_allocation_cannot_submit (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr51_student_without_confirmed_allocation_cannot_submit) ... ok
+test_fr53_authorized_warden_can_reject_pending_request (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_authorized_warden_can_reject_pending_request) ... ok
+test_fr53_missing_rejection_reason_is_rejected (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_missing_rejection_reason_is_rejected) ... ok
+test_fr53_pending_queue_is_limited_to_authorized_hostels (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_pending_queue_is_limited_to_authorized_hostels) ... ok
+test_fr53_rejection_reason_is_visible_to_student (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_rejection_reason_is_visible_to_student) ... ok
+test_fr53_request_that_is_no_longer_pending_cannot_be_rejected (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_request_that_is_no_longer_pending_cannot_be_rejected) ... ok
+test_fr53_student_cannot_reject_request (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_student_cannot_reject_request) ... security_event=role_denied user_id=2 method=POST path=/manage/room-change-requests/1/reject/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_fr53_warden_outside_hostel_scope_cannot_reject_request (apps.allocation.tests.test_room_change_requests.RoomChangeRequestTests.test_fr53_warden_outside_hostel_scope_cannot_reject_request) ... security_event=not_found user_id=3 method=POST path=/manage/room-change-requests/1/reject/ reason=object not found or outside the user's scope
+ok
+test_activation_failure_does_not_persist_status_or_change_occupancy (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_activation_failure_does_not_persist_status_or_change_occupancy) ... ok
+test_activation_is_rejected_for_inactive_room_or_hostel (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_activation_is_rejected_for_inactive_room_or_hostel) ... ok
+test_admin_allows_valid_creation_and_disables_hard_delete (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_admin_allows_valid_creation_and_disables_hard_delete) ... ok
+test_admin_rejects_allocation_creation_for_maintenance_room (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_admin_rejects_allocation_creation_for_maintenance_room) ... ok
+test_admin_rejects_allocation_for_inactive_or_full_rooms (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_admin_rejects_allocation_for_inactive_or_full_rooms) ... ok
+test_admin_rejects_bed_number_outside_room_capacity (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_admin_rejects_bed_number_outside_room_capacity) ... ok
+test_ended_and_cancelled_allocations_are_not_occupied (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_ended_and_cancelled_allocations_are_not_occupied) ... ok
+test_ending_or_cancelling_active_allocation_releases_bed_and_updates_status (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_ending_or_cancelling_active_allocation_releases_bed_and_updates_status) ... ok
+test_maintenance_status_is_preserved_when_occupancy_changes (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_maintenance_status_is_preserved_when_occupancy_changes) ... ok
+test_model_save_rejects_activation_that_exceeds_capacity (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_model_save_rejects_activation_that_exceeds_capacity) ... ok
+test_model_save_rejects_allocation_that_exceeds_capacity (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_model_save_rejects_allocation_that_exceeds_capacity) ... ok
+test_model_save_rejects_bed_number_outside_room_capacity (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_model_save_rejects_bed_number_outside_room_capacity) ... ok
+test_moving_active_allocation_refreshes_both_rooms (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_moving_active_allocation_refreshes_both_rooms) ... ok
+test_provisional_and_confirmed_allocations_count_and_fill_room (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_provisional_and_confirmed_allocations_count_and_fill_room) ... ok
+test_service_and_model_save_reject_unavailable_or_full_rooms (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_service_and_model_save_reject_unavailable_or_full_rooms) ... ok
+test_valid_activation_updates_room_status (apps.allocation.tests.test_room_integrity.RoomAllocationIntegrityTests.test_valid_activation_updates_room_status) ... ok
+test_fr41_admin_can_create_window (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_admin_can_create_window) ... ok
+test_fr41_admin_can_edit_window_and_change_is_audited (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_admin_can_edit_window_and_change_is_audited) ... ok
+test_fr41_bad_year_format_rejected (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_bad_year_format_rejected) ... ok
+test_fr41_duplicate_academic_year_rejected (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_duplicate_academic_year_rejected) ... ok
+test_fr41_end_before_start_rejected (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_end_before_start_rejected) ... ok
+test_fr41_get_open_window_inside_and_outside_dates (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_get_open_window_inside_and_outside_dates) ... ok
+test_fr41_require_open_window_raises_outside (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_require_open_window_raises_outside) ... ok
+test_fr41_student_and_warden_get_403 (apps.allocation.tests.test_window.ApplicationWindowTests.test_fr41_student_and_warden_get_403) ... security_event=role_denied user_id=1 method=GET path=/manage/windows/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/manage/windows/new/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/manage/windows/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/manage/windows/new/ reason=role WARDEN not in ADMIN
+ok
+test_in_progress_can_be_resolved_with_remark (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_in_progress_can_be_resolved_with_remark) ... ok
+test_invalid_transition_is_rejected (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_invalid_transition_is_rejected) ... ok
+test_open_can_be_rejected_with_remark (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_open_can_be_rejected_with_remark) ... ok
+test_open_can_move_to_in_progress_with_remark (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_open_can_move_to_in_progress_with_remark) ... ok
+test_overdue_filter_uses_72_hour_cutoff_and_statuses (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_overdue_filter_uses_72_hour_cutoff_and_statuses) ... ok
+test_resolved_can_be_reopened_within_seven_days (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_resolved_can_be_reopened_within_seven_days) ... ok
+test_resolved_cannot_be_reopened_after_seven_days (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_resolved_cannot_be_reopened_after_seven_days) ... ok
+test_status_change_requires_remark (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_status_change_requires_remark) ... ok
+test_warden_can_move_complaint_to_in_progress_through_page (apps.complaints.tests.test_issue_27.ComplaintStateServiceTests.test_warden_can_move_complaint_to_in_progress_through_page) ... ok
+test_tc13_anonymous_user_is_sent_to_login (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_anonymous_user_is_sent_to_login) ... ok
+test_tc13_complaint_numbers_are_unique_and_sequential (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_complaint_numbers_are_unique_and_sequential) ... ok
+test_tc13_ended_allocation_does_not_count (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_ended_allocation_does_not_count) ... ok
+test_tc13_missing_category_is_rejected (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_missing_category_is_rejected) ... ok
+test_tc13_short_description_is_rejected (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_short_description_is_rejected) ... ok
+test_tc13_student_sees_only_own_complaints (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_student_sees_only_own_complaints) ... ok
+test_tc13_student_with_allocation_can_raise_complaint (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_student_with_allocation_can_raise_complaint) ... ok
+test_tc13_student_without_active_allocation_is_blocked (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_student_without_active_allocation_is_blocked) ... ok
+test_tc13_warden_sees_placeholder_not_student_form (apps.complaints.tests.test_raise_complaint.RaiseComplaintTests.test_tc13_warden_sees_placeholder_not_student_form) ... ok
+test_audit_logs_cannot_be_added_changed_or_deleted_in_admin (apps.core.tests.test_access_control.AuditLogAdminPermissionTests.test_audit_logs_cannot_be_added_changed_or_deleted_in_admin) ... ok
+test_only_active_admin_superuser_can_view_audit_logs (apps.core.tests.test_access_control.AuditLogAdminPermissionTests.test_only_active_admin_superuser_can_view_audit_logs) ... ok
+test_audit_log_entries_cannot_be_bulk_deleted (apps.core.tests.test_access_control.AuditLogIntegrityTests.test_audit_log_entries_cannot_be_bulk_deleted) ... ok
+test_audit_log_entries_cannot_be_bulk_updated (apps.core.tests.test_access_control.AuditLogIntegrityTests.test_audit_log_entries_cannot_be_bulk_updated) ... ok
+test_audit_log_entry_cannot_be_deleted (apps.core.tests.test_access_control.AuditLogIntegrityTests.test_audit_log_entry_cannot_be_deleted) ... ok
+test_audit_log_entry_cannot_be_updated (apps.core.tests.test_access_control.AuditLogIntegrityTests.test_audit_log_entry_cannot_be_updated) ... ok
+test_retention_command_removes_old_logs_only (apps.core.tests.test_access_control.AuditLogRetentionTests.test_retention_command_removes_old_logs_only) ... ok
+test_tc20_boys_warden_cannot_open_girls_application (apps.core.tests.test_access_control.IdorTests.test_tc20_boys_warden_cannot_open_girls_application) ... security_event=not_found user_id=4 method=POST path=/applications/2/reject/ reason=object not found or outside the user's scope
+ok
+test_tc20_student_cannot_download_other_students_receipt (apps.core.tests.test_access_control.IdorTests.test_tc20_student_cannot_download_other_students_receipt) ... ok
+test_tc20_student_cannot_open_other_students_application (apps.core.tests.test_access_control.IdorTests.test_tc20_student_cannot_open_other_students_application) ... ok
+test_tc20_student_cannot_open_other_students_profile (apps.core.tests.test_access_control.IdorTests.test_tc20_student_cannot_open_other_students_profile) ... security_event=not_found user_id=1 method=GET path=/students/profile/2/photo/ reason=object not found or outside the user's scope
+security_event=not_found user_id=1 method=GET path=/students/profile/2/export.pdf reason=object not found or outside the user's scope
+security_event=forbidden user_id=1 method=GET path=/students/profile/2/ reason=denied by object or scope check
+security_event=forbidden user_id=1 method=GET path=/students/profile/2/edit/ reason=denied by object or scope check
+ok
+test_tc20_student_cannot_reopen_other_students_complaint (apps.core.tests.test_access_control.IdorTests.test_tc20_student_cannot_reopen_other_students_complaint) ... security_event=not_found user_id=1 method=POST path=/complaints/CMP-2026-00001/reopen/ reason=object not found or outside the user's scope
+ok
+test_tc04_anonymous_user_is_sent_to_login (apps.core.tests.test_access_control.RoleAccessTests.test_tc04_anonymous_user_is_sent_to_login) ... ok
+test_tc04_each_role_lands_on_its_own_dashboard (apps.core.tests.test_access_control.RoleAccessTests.test_tc04_each_role_lands_on_its_own_dashboard) ... ok
+test_tc04_student_cannot_open_warden_or_admin_pages (apps.core.tests.test_access_control.RoleAccessTests.test_tc04_student_cannot_open_warden_or_admin_pages) ... security_event=role_denied user_id=1 method=GET path=/dashboard/warden/ reason=role STUDENT not in WARDEN
+security_event=role_denied user_id=1 method=GET path=/dashboard/admin/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/reports/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_tc20_role_denial_is_logged_without_personal_data (apps.core.tests.test_access_control.RoleMatrixTests.test_tc20_role_denial_is_logged_without_personal_data) ... ok
+test_tc20_staff_pages_open_for_warden (apps.core.tests.test_access_control.RoleMatrixTests.test_tc20_staff_pages_open_for_warden) ... ok
+test_tc20_student_cannot_view_audit_log (apps.core.tests.test_access_control.RoleMatrixTests.test_tc20_student_cannot_view_audit_log) ... ok
+test_tc20_student_gets_403_on_warden_and_admin_pages (apps.core.tests.test_access_control.RoleMatrixTests.test_tc20_student_gets_403_on_warden_and_admin_pages) ... security_event=role_denied user_id=1 method=GET path=/applications/queue/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/applications/1/allocate/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/manage/room-change-requests/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/manage/allocation-history/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/grid/ reason=role STUDENT not in ADMIN,WARDEN
+security_event=role_denied user_id=1 method=GET path=/students/search/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/fees/provisional-unpaid/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/reports/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/reports/occupancy/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/reports/occupancy/export/csv/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=1 method=GET path=/dashboard/warden/ reason=role STUDENT not in WARDEN
+security_event=role_denied user_id=1 method=GET path=/manage/windows/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/manage/windows/new/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/manage/windows/1/edit/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/hostels/new/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/hostels/1/edit/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/rooms/new/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/rooms/rooms/1/edit/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/manage/rooms/import/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/accounts/manage/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/accounts/manage/create/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=GET path=/dashboard/admin/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=POST path=/accounts/manage/3/role/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=POST path=/accounts/manage/3/deactivate/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=POST path=/rooms/hostels/1/deactivate/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=1 method=POST path=/applications/auto-allocate/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_tc20_warden_gets_403_on_admin_only_pages (apps.core.tests.test_access_control.RoleMatrixTests.test_tc20_warden_gets_403_on_admin_only_pages) ... security_event=role_denied user_id=2 method=GET path=/manage/windows/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/manage/windows/new/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/manage/windows/1/edit/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/rooms/hostels/new/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/rooms/hostels/1/edit/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/rooms/rooms/new/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/rooms/rooms/1/edit/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/manage/rooms/import/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/accounts/manage/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/accounts/manage/create/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=GET path=/dashboard/admin/ reason=role WARDEN not in ADMIN
+ok
+test_tc20_allowlists_name_real_routes (apps.core.tests.test_access_control.RouteInventoryTests.test_tc20_allowlists_name_real_routes) ... ok
+test_tc20_every_non_public_route_requires_login (apps.core.tests.test_access_control.RouteInventoryTests.test_tc20_every_non_public_route_requires_login)
+Anonymous GET of every route must redirect to login (302) or be refused as a GET (405). ... ok
+test_tc20_scope_exceptions_become_403_404_and_tokens_are_redacted (apps.core.tests.test_access_control.SecurityLoggingTests.test_tc20_scope_exceptions_become_403_404_and_tokens_are_redacted) ... ok
+test_tc20_view_returning_403_is_logged (apps.core.tests.test_access_control.SecurityLoggingTests.test_tc20_view_returning_403_is_logged) ... ok
+test_administrator_dashboard_bed_summary_and_overdue_complaints_are_system_wide (apps.core.tests.test_dashboards.DashboardCountTests.test_administrator_dashboard_bed_summary_and_overdue_complaints_are_system_wide) ... ok
+test_fr44_warden_dashboard_count_matches_queue (apps.core.tests.test_dashboards.DashboardCountTests.test_fr44_warden_dashboard_count_matches_queue) ... ok
+test_warden_dashboard_bed_summary_is_scoped_and_handles_empty_hostels (apps.core.tests.test_dashboards.DashboardCountTests.test_warden_dashboard_bed_summary_is_scoped_and_handles_empty_hostels) ... ok
+test_creates_a_repeatable_scale_shape_without_deleting_existing_data (apps.core.tests.test_seed_performance_data.SeedPerformanceDataTests.test_creates_a_repeatable_scale_shape_without_deleting_existing_data) ... ok
+test_refuses_to_duplicate_or_overwrite_the_performance_hostel (apps.core.tests.test_seed_performance_data.SeedPerformanceDataTests.test_refuses_to_duplicate_or_overwrite_the_performance_hostel) ... ok
+test_new_year_restarts_the_count (apps.core.tests.test_sequences.SequenceTests.test_new_year_restarts_the_count) ... ok
+test_numbers_are_sequential_per_prefix (apps.core.tests.test_sequences.SequenceTests.test_numbers_are_sequential_per_prefix) ... ok
+test_tc14_create_fee_record_is_idempotent (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_create_fee_record_is_idempotent) ... ok
+test_tc14_dues_page_shows_total_paid_balance_and_history (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_dues_page_shows_total_paid_balance_and_history) ... ok
+test_tc14_dues_page_without_payments_says_so (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_dues_page_without_payments_says_so) ... ok
+test_tc14_new_allocation_gets_fee_record_equal_to_room_annual_fee (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_new_allocation_gets_fee_record_equal_to_room_annual_fee) ... ok
+test_tc14_student_is_redirected_from_fees_index_to_dues (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_student_is_redirected_from_fees_index_to_dues) ... ok
+test_tc14_student_sees_only_own_dues (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_student_sees_only_own_dues) ... ok
+test_tc14_student_without_allocation_sees_empty_message (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_student_without_allocation_sees_empty_message) ... ok
+test_tc14_warden_cannot_open_student_dues_page (apps.fees.tests.test_fee_record.FeeRecordTests.test_tc14_warden_cannot_open_student_dues_page) ... security_event=role_denied user_id=3 method=GET path=/fees/my/ reason=role WARDEN not in STUDENT
+ok
+test_duplicate_submission_returns_existing_payment (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_duplicate_submission_returns_existing_payment) ... ok
+test_full_payment_confirms_provisional_allocation (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_full_payment_confirms_provisional_allocation) ... ok
+test_future_payment_date_rejected (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_future_payment_date_rejected) ... ok
+test_non_cash_requires_transaction_reference (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_non_cash_requires_transaction_reference) ... ok
+test_payment_cannot_exceed_balance (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_payment_cannot_exceed_balance) ... ok
+test_provisional_unpaid_after_15_days_is_listed (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_provisional_unpaid_after_15_days_is_listed) ... ok
+test_record_payment_generates_sequential_receipt (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_record_payment_generates_sequential_receipt) ... ok
+test_student_can_download_own_receipt (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_student_can_download_own_receipt) ... ok
+test_student_cannot_download_other_students_receipt (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_student_cannot_download_other_students_receipt) ... security_event=forbidden user_id=2 method=GET path=/fees/payments/RCP-2026-00001/receipt.pdf reason=view returned 403
+ok
+test_warden_cannot_manage_unassigned_hostel (apps.fees.tests.test_issue_29.Issue29PaymentTests.test_warden_cannot_manage_unassigned_hostel) ... security_event=forbidden user_id=3 method=GET path=/fees/allocations/1/payments/ reason=view returned 403
+ok
+test_admin_cannot_post_or_open_announcement_page (apps.notifications.tests.test_announcements.AnnouncementTests.test_admin_cannot_post_or_open_announcement_page) ... security_event=role_denied user_id=3 method=GET path=/notifications/ reason=role ADMIN not in STUDENT,WARDEN
+security_event=role_denied user_id=3 method=GET path=/notifications/announcements/post/ reason=role ADMIN not in WARDEN
+ok
+test_anonymous_user_is_sent_to_login (apps.notifications.tests.test_announcements.AnnouncementTests.test_anonymous_user_is_sent_to_login) ... ok
+test_past_expiry_date_is_rejected (apps.notifications.tests.test_announcements.AnnouncementTests.test_past_expiry_date_is_rejected) ... ok
+test_student_cannot_post (apps.notifications.tests.test_announcements.AnnouncementTests.test_student_cannot_post) ... security_event=role_denied user_id=4 method=GET path=/notifications/announcements/post/ reason=role STUDENT not in WARDEN
+ok
+test_student_sees_only_current_announcements_for_allocated_hostel (apps.notifications.tests.test_announcements.AnnouncementTests.test_student_sees_only_current_announcements_for_allocated_hostel) ... ok
+test_title_and_body_limits_are_enforced (apps.notifications.tests.test_announcements.AnnouncementTests.test_title_and_body_limits_are_enforced) ... ok
+test_warden_can_post_to_assigned_active_hostel (apps.notifications.tests.test_announcements.AnnouncementTests.test_warden_can_post_to_assigned_active_hostel) ... ok
+test_warden_cannot_post_to_another_wardens_hostel (apps.notifications.tests.test_announcements.AnnouncementTests.test_warden_cannot_post_to_another_wardens_hostel) ... ok
+test_warden_cannot_select_inactive_assigned_hostel (apps.notifications.tests.test_announcements.AnnouncementTests.test_warden_cannot_select_inactive_assigned_hostel) ... ok
+test_failed_mail_waits_five_minutes_before_retry (apps.notifications.tests.test_dispatcher.NotificationDispatcherTests.test_failed_mail_waits_five_minutes_before_retry) ... ok
+test_pending_notification_is_sent_as_plain_text_and_html (apps.notifications.tests.test_dispatcher.NotificationDispatcherTests.test_pending_notification_is_sent_as_plain_text_and_html) ... ok
+test_tc16_failed_mail_retried_three_times (apps.notifications.tests.test_dispatcher.NotificationDispatcherTests.test_tc16_failed_mail_retried_three_times) ... ok
+test_unknown_notification_kind_is_rejected (apps.notifications.tests.test_dispatcher.NotificationDispatcherTests.test_unknown_notification_kind_is_rejected) ... ok
+test_duplicate_enqueue_creates_no_second_row (apps.notifications.tests.test_enqueue.EnqueueTests.test_duplicate_enqueue_creates_no_second_row) ... ok
+test_enqueue_creates_pending_row (apps.notifications.tests.test_enqueue.EnqueueTests.test_enqueue_creates_pending_row) ... ok
+test_rollback_in_caller_leaves_no_row (apps.notifications.tests.test_enqueue.EnqueueTests.test_rollback_in_caller_leaves_no_row) ... ok
+test_same_kind_for_another_entity_is_allowed (apps.notifications.tests.test_outbox.OutboxTests.test_same_kind_for_another_entity_is_allowed) ... ok
+test_same_message_cannot_be_queued_twice (apps.notifications.tests.test_outbox.OutboxTests.test_same_message_cannot_be_queued_twice) ... ok
+test_administrator_can_report_across_hostels (apps.reports.tests.test_reports.ReportTests.test_administrator_can_report_across_hostels) ... ok
+test_all_reports_render_required_fields_for_authorized_warden (apps.reports.tests.test_reports.ReportTests.test_all_reports_render_required_fields_for_authorized_warden) ... ok
+test_csv_and_pdf_exports_contain_report_data_and_empty_results_are_valid (apps.reports.tests.test_reports.ReportTests.test_csv_and_pdf_exports_contain_report_data_and_empty_results_are_valid) ... ok
+test_hostel_and_date_filters_are_applied_to_reports_and_exports (apps.reports.tests.test_reports.ReportTests.test_hostel_and_date_filters_are_applied_to_reports_and_exports) ... ok
+test_invalid_date_range_is_rejected (apps.reports.tests.test_reports.ReportTests.test_invalid_date_range_is_rejected) ... ok
+test_report_index_lists_all_four_reports (apps.reports.tests.test_reports.ReportTests.test_report_index_lists_all_four_reports) ... ok
+test_student_cannot_access_report_pages_or_exports (apps.reports.tests.test_reports.ReportTests.test_student_cannot_access_report_pages_or_exports) ... security_event=role_denied user_id=4 method=GET path=/reports/ reason=role STUDENT not in WARDEN,ADMIN
+security_event=role_denied user_id=4 method=GET path=/reports/occupancy/export/csv/ reason=role STUDENT not in WARDEN,ADMIN
+ok
+test_warden_cannot_view_or_export_another_hostels_data (apps.reports.tests.test_reports.ReportTests.test_warden_cannot_view_or_export_another_hostels_data) ... ok
+test_anonymous_api_request_returns_json_401 (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_anonymous_api_request_returns_json_401) ... ok
+test_api_filters_and_rejects_invalid_query_values (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_api_filters_and_rejects_invalid_query_values) ... ok
+test_staff_api_returns_room_details_and_active_allocation_occupancy (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_staff_api_returns_room_details_and_active_allocation_occupancy) ... ok
+test_staff_grid_page_renders_room_level_vacancy_data (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_staff_grid_page_renders_room_level_vacancy_data) ... ok
+test_student_cannot_filter_to_hostel_of_another_gender (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_student_cannot_filter_to_hostel_of_another_gender) ... ok
+test_student_receives_only_gender_scoped_vacancy_counts (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_student_receives_only_gender_scoped_vacancy_counts) ... ok
+test_warden_cannot_query_hostel_outside_assigned_scope (apps.rooms.tests.test_availability.RoomAvailabilityTests.test_warden_cannot_query_hostel_outside_assigned_scope) ... ok
+test_anonymous_users_are_redirected_from_configuration_pages (apps.rooms.tests.test_configuration.ConfigurationTests.test_anonymous_users_are_redirected_from_configuration_pages) ... ok
+test_fr31_admin_can_create_hostel_with_assigned_warden (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_admin_can_create_hostel_with_assigned_warden) ... ok
+test_fr31_admin_can_edit_hostel_and_audit_old_and_new_values (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_admin_can_edit_hostel_and_audit_old_and_new_values) ... ok
+test_fr31_database_integrity_error_is_shown_on_form (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_database_integrity_error_is_shown_on_form) ... ok
+test_fr31_fr32_admin_pages_render (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_fr32_admin_pages_render) ... ok
+test_fr31_hostel_deactivation_requires_post_and_is_audited (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_hostel_deactivation_requires_post_and_is_audited) ... ok
+test_fr31_hostel_name_must_be_unique_and_assignments_must_be_wardens (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_hostel_name_must_be_unique_and_assignments_must_be_wardens) ... ok
+test_fr31_hostel_requires_at_least_one_warden (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr31_hostel_requires_at_least_one_warden) ... ok
+test_fr32_admin_can_create_and_edit_room_with_audit (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_admin_can_create_and_edit_room_with_audit) ... ok
+test_fr32_capacity_cannot_be_reduced_below_active_occupancy (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_capacity_cannot_be_reduced_below_active_occupancy) ... ok
+test_fr32_database_integrity_error_is_shown_on_form (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_database_integrity_error_is_shown_on_form) ... ok
+test_fr32_only_administrator_can_change_configuration (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_only_administrator_can_change_configuration) ... security_event=role_denied user_id=2 method=POST path=/rooms/hostels/new/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/hostels/1/edit/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/hostels/1/deactivate/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/hostels/1/reactivate/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/rooms/new/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/rooms/1/edit/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/rooms/1/deactivate/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=2 method=POST path=/rooms/rooms/1/reactivate/ reason=role WARDEN not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/hostels/new/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/hostels/1/edit/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/hostels/1/deactivate/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/hostels/1/reactivate/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/rooms/new/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/rooms/1/edit/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/rooms/1/deactivate/ reason=role STUDENT not in ADMIN
+security_event=role_denied user_id=3 method=POST path=/rooms/rooms/1/reactivate/ reason=role STUDENT not in ADMIN
+ok
+test_fr32_room_bounds_and_choices_are_validated (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_room_bounds_and_choices_are_validated) ... ok
+test_fr32_room_number_must_be_unique_within_hostel (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_room_number_must_be_unique_within_hostel) ... ok
+test_fr32_room_status_must_match_occupancy (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr32_room_status_must_match_occupancy) ... ok
+test_fr35_room_and_hostel_deactivation_can_be_reversed (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr35_room_and_hostel_deactivation_can_be_reversed) ... ok
+test_fr35_room_and_hostel_deactivation_reject_active_allocations (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr35_room_and_hostel_deactivation_reject_active_allocations) ... ok
+test_fr35_rooms_and_hostels_cannot_be_physically_deleted (apps.rooms.tests.test_configuration.ConfigurationTests.test_fr35_rooms_and_hostels_cannot_be_physically_deleted) ... ok
+test_warden_can_view_assigned_configuration_but_not_other_hostels (apps.rooms.tests.test_configuration.ConfigurationTests.test_warden_can_view_assigned_configuration_but_not_other_hostels) ... ok
+test_header_must_match_approved_csv_schema (apps.rooms.tests.test_import.RoomCSVImportTests.test_header_must_match_approved_csv_schema) ... ok
+test_import_saves_valid_rows_and_reports_invalid_and_duplicate_rows (apps.rooms.tests.test_import.RoomCSVImportTests.test_import_saves_valid_rows_and_reports_invalid_and_duplicate_rows) ... ok
+test_only_administrator_can_import_rooms (apps.rooms.tests.test_import.RoomCSVImportTests.test_only_administrator_can_import_rooms) ... security_event=role_denied user_id=2 method=POST path=/manage/rooms/import/ reason=role WARDEN not in ADMIN
+ok
+test_unknown_hostel_and_invalid_room_choices_are_reported_by_row (apps.rooms.tests.test_import.RoomCSVImportTests.test_unknown_hostel_and_invalid_room_choices_are_reported_by_row) ... ok
+test_allocation_creation_status_transitions_and_room_moves_refresh_status (apps.rooms.tests.test_lifecycle.RoomLifecycleTests.test_allocation_creation_status_transitions_and_room_moves_refresh_status) ... ok
+test_maintenance_is_preserved_and_active_allocations_are_rejected (apps.rooms.tests.test_lifecycle.RoomLifecycleTests.test_maintenance_is_preserved_and_active_allocations_are_rejected) ... ok
+test_validator_excludes_the_allocation_being_updated (apps.rooms.tests.test_lifecycle.RoomLifecycleTests.test_validator_excludes_the_allocation_being_updated) ... ok
+test_capacity_above_four_is_rejected (apps.rooms.tests.test_ranges.RoomRangeTests.test_capacity_above_four_is_rejected) ... ok
+test_fee_above_limit_is_rejected (apps.rooms.tests.test_ranges.RoomRangeTests.test_fee_above_limit_is_rejected) ... ok
+test_valid_room_is_saved (apps.rooms.tests.test_ranges.RoomRangeTests.test_valid_room_is_saved) ... ok
+test_admin_can_download_any_profile_pdf (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_admin_can_download_any_profile_pdf) ... ok
+test_admin_can_download_any_students_photo (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_admin_can_download_any_students_photo) ... ok
+test_missing_photo_returns_404 (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_missing_photo_returns_404) ... security_event=not_found user_id=1 method=GET path=/students/profile/1/photo/ reason=object not found or outside the user's scope
+ok
+test_photo_is_stored_under_private_media (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_photo_is_stored_under_private_media) ... ok
+test_profile_pdf_contains_allocation_data (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_profile_pdf_contains_allocation_data) ... ok
+test_student_can_download_own_photo (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_student_can_download_own_photo) ... ok
+test_student_can_download_own_profile_pdf (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_student_can_download_own_profile_pdf) ... ok
+test_student_cannot_download_another_students_photo (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_student_cannot_download_another_students_photo) ... security_event=not_found user_id=2 method=GET path=/students/profile/1/photo/ reason=object not found or outside the user's scope
+ok
+test_student_cannot_download_another_students_profile_pdf (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_student_cannot_download_another_students_profile_pdf) ... security_event=not_found user_id=1 method=GET path=/students/profile/2/export.pdf reason=object not found or outside the user's scope
+ok
+test_uploaded_photo_uses_randomized_filename (apps.students.tests.test_issue33.SecureProfileDeliveryTests.test_uploaded_photo_uses_randomized_filename) ... ok
+test_admin_student_list_is_paginated (apps.students.tests.test_performance.StudentListScalabilityTests.test_admin_student_list_is_paginated) ... ok
+test_search_prefetches_allocations_once_for_the_page (apps.students.tests.test_performance.StudentListScalabilityTests.test_search_prefetches_allocations_once_for_the_page) ... ok
+test_admin_can_edit_academic_fields (apps.students.tests.test_profile.StudentProfileTests.test_admin_can_edit_academic_fields) ... ok
+test_admin_edit_form_includes_academic_fields (apps.students.tests.test_profile.StudentProfileTests.test_admin_edit_form_includes_academic_fields) ... ok
+test_invalid_mobile_number_is_rejected (apps.students.tests.test_profile.StudentProfileTests.test_invalid_mobile_number_is_rejected) ... ok
+test_profile_edit_audits_each_changed_field (apps.students.tests.test_profile.StudentProfileTests.test_profile_edit_audits_each_changed_field) ... ok
+test_student_can_edit_permitted_fields (apps.students.tests.test_profile.StudentProfileTests.test_student_can_edit_permitted_fields) ... ok
+test_student_can_upload_profile_photo (apps.students.tests.test_profile.StudentProfileTests.test_student_can_upload_profile_photo) ... ok
+test_student_can_view_own_profile (apps.students.tests.test_profile.StudentProfileTests.test_student_can_view_own_profile) ... ok
+test_student_cannot_change_academic_fields_by_posting_them (apps.students.tests.test_profile.StudentProfileTests.test_student_cannot_change_academic_fields_by_posting_them) ... ok
+test_student_cannot_edit_another_students_profile (apps.students.tests.test_profile.StudentProfileTests.test_student_cannot_edit_another_students_profile) ... security_event=forbidden user_id=1 method=POST path=/students/profile/2/edit/ reason=denied by object or scope check
+ok
+test_student_cannot_view_another_students_profile (apps.students.tests.test_profile.StudentProfileTests.test_student_cannot_view_another_students_profile) ... security_event=forbidden user_id=1 method=GET path=/students/profile/2/ reason=denied by object or scope check
+ok
+test_student_edit_form_does_not_expose_academic_fields (apps.students.tests.test_profile.StudentProfileTests.test_student_edit_form_does_not_expose_academic_fields) ... ok
+test_unchanged_profile_fields_are_not_audited (apps.students.tests.test_profile.StudentProfileTests.test_unchanged_profile_fields_are_not_audited) ... ok
+test_admin_can_search_by_partial_srn (apps.students.tests.test_profile.StudentSearchTests.test_admin_can_search_by_partial_srn) ... ok
+test_admin_can_search_name_case_insensitively (apps.students.tests.test_profile.StudentSearchTests.test_admin_can_search_name_case_insensitively) ... ok
+test_warden_cannot_filter_into_another_hostel (apps.students.tests.test_profile.StudentSearchTests.test_warden_cannot_filter_into_another_hostel) ... ok
+test_warden_only_sees_students_in_assigned_hostels (apps.students.tests.test_profile.StudentSearchTests.test_warden_only_sees_students_in_assigned_hostels) ... ok
+test_warden_sees_only_authorized_room_details (apps.students.tests.test_profile.StudentSearchTests.test_warden_sees_only_authorized_room_details) ... ok
+test_sec_req10_env_example_has_placeholders_only (apps.core.tests.test_secrets.SecretsFromEnvironmentTests.test_sec_req10_env_example_has_placeholders_only) ... ok
+test_sec_req10_production_refuses_placeholder_secret_key (apps.core.tests.test_secrets.SecretsFromEnvironmentTests.test_sec_req10_production_refuses_placeholder_secret_key) ... ok
+test_sec_req10_settings_reads_secrets_from_env (apps.core.tests.test_secrets.SecretsFromEnvironmentTests.test_sec_req10_settings_reads_secrets_from_env) ... ok
+test_records_django_request_processing_time (apps.core.tests.test_server_timing.ServerTimingMiddlewareTests.test_records_django_request_processing_time) ... ok
+test_address_longer_than_250_characters_is_rejected (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_address_longer_than_250_characters_is_rejected) ... ok
+test_address_shorter_than_ten_characters_is_rejected (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_address_shorter_than_ten_characters_is_rejected) ... ok
+test_blank_address_is_rejected (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_blank_address_is_rejected) ... ok
+test_emergency_mobile_must_be_valid (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_emergency_mobile_must_be_valid) ... ok
+test_guardian_mobile_must_be_valid (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_guardian_mobile_must_be_valid) ... ok
+test_invalid_email_is_rejected (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_invalid_email_is_rejected) ... ok
+test_mobile_must_be_ten_digits_starting_with_6_to_9 (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_mobile_must_be_ten_digits_starting_with_6_to_9) ... ok
+test_non_image_file_is_rejected (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_non_image_file_is_rejected) ... ok
+test_photo_over_two_mb_is_rejected (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_photo_over_two_mb_is_rejected) ... ok
+test_valid_png_photo_is_accepted (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_valid_png_photo_is_accepted) ... ok
+test_valid_profile_data_is_accepted (apps.students.tests.test_profile_validation.StudentProfileValidationTests.test_valid_profile_data_is_accepted) ... ok
+test_alerts_are_announced (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_alerts_are_announced) ... ok
+test_auto_rendered_forms_are_not_used (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_auto_rendered_forms_are_not_used) ... ok
+test_bootstrap_modals_have_accessible_names (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_bootstrap_modals_have_accessible_names) ... ok
+test_destructive_actions_do_not_use_inline_confirm_or_placeholder_links (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_destructive_actions_do_not_use_inline_confirm_or_placeholder_links) ... ok
+test_images_have_text_alternatives (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_images_have_text_alternatives) ... ok
+test_shared_base_has_skip_link_and_main_landmark (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_shared_base_has_skip_link_and_main_landmark) ... ok
+test_tables_have_captions_and_column_scopes (apps.core.tests.test_accessibility_templates.AccessibilityTemplateTests.test_tables_have_captions_and_column_scopes) ... ok
+
+----------------------------------------------------------------------
+Ran 373 tests in 8.576s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+  Applying sessions.0001_initial... OK
+System check identified no issues (0 silenced).
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 0 notification(s): 0 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 0 notification(s): 0 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Purged 1 expired audit log record(s).
+Created 10 synthetic students, 8 beds, 5 allocations, 5 pending applications, and 5 complaints in HMS Load Test Hostel.
+Processed 1 notification(s): 0 sent, 1 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 1 sent, 0 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 0 sent, 1 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 0 sent, 1 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 0 sent, 1 scheduled for retry, 0 permanently failed.
+Processed 1 notification(s): 0 sent, 0 scheduled for retry, 1 permanently failed.
