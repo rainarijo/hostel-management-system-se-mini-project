@@ -2,44 +2,38 @@
 
 **Project:** Hostel Management System  
 **Date:** 7 November 2026  
-**Scope:** Part 3 complaint status update test case, with automated test mapping.
+**Scope:** Part 3 complaint management test case updates.
 
-This is a Part 3 addendum to the existing System Test Plan. It records the complaint status update path fixed under issue #81. It does not replace the full System Test Plan.
+This addendum records the complaint status update scenario covered by the Part 3 fix to issue #81. It supplements the existing System Test Plan.
 
-## TC-15 — Warden updates complaint status
+## TC-13 — Complaint management
 
-> **TC ID check:** TC-15 is used here as the complaint-status case identifier, based on the current sequence of test IDs in the repository. Confirm it against the approved System Test Plan before final submission.
+**Requirements:** FR-6.1, FR-6.2, FR-6.3  
+**Actors:** Student; Warden assigned to the complaint's hostel.
+
+### Existing complaint creation scenario
 
 | Field | Details |
 |---|---|
-| Requirement | FR-6.3 |
-| Actor | Warden assigned to the complaint's hostel |
-| Preconditions | An open complaint exists in a hostel assigned to the Warden; the Warden is authenticated. |
-| Test type | Browser/page integration test |
+| Preconditions | Student is authenticated and has an active room allocation. |
+| Action | Student submits a complaint with a valid category and description. |
+| Expected result | Complaint is created for the student's active room with an Open status and a unique complaint number. |
+| Automated tests | `test_tc13_student_with_allocation_can_raise_complaint` and related `test_tc13_` tests in `apps/complaints/tests/test_raise_complaint.py`. |
 
-### Steps and expected results
+### Part 3 scenario — Warden updates complaint status
+
+| Field | Details |
+|---|---|
+| Preconditions | An Open complaint exists in a hostel assigned to the Warden; the Warden is authenticated. |
+| Automated test | `test_warden_can_move_complaint_to_in_progress_through_page` in `apps/complaints/tests/test_issue_27.py`. |
 
 | Step | Action | Expected result |
 |---|---|---|
 | 1 | Open the Complaints page as the assigned Warden. | The complaint is listed and an Update link is available. |
-| 2 | Select Update for the open complaint. | The status update form loads successfully and offers permitted next statuses. |
+| 2 | Select Update for the Open complaint. | The status update form loads successfully and offers permitted next statuses. |
 | 3 | Select In Progress, enter a remark, and submit. | The request succeeds and returns to the Complaints page. |
 | 4 | Verify the complaint status and remark. | The complaint is stored as In Progress with the submitted remark. |
 
-### Automated test mapping
+### Traceability note
 
-| TC ID | Automated test name | Result in current run |
-|---|---|---|
-| TC-15 | `test_warden_can_move_complaint_to_in_progress_through_page` | Pass |
-
-Related FR-6.3 service tests in `apps/complaints/tests/test_issue_27.py` also cover the Open-to-In-Progress transition, invalid transitions, and the required remark.
-
-## Existing complaint creation case
-
-| TC ID | Requirement | Automated test mapping |
-|---|---|---|
-| TC-13 | FR-6.1, FR-6.2 | `test_tc13_student_with_allocation_can_raise_complaint`; related validation and access tests are named with the `test_tc13_` prefix in `apps/complaints/tests/test_raise_complaint.py`. |
-
-## Execution note
-
-The full Django test run recorded in `docs/reports/unit-test-log.txt` completed with 373 tests passing. The TC-15 numeric identifier should be confirmed against the approved System Test Plan before this addendum is merged.
+The repository copy of `STP_Hostel_Management_System.pdf` maps HMS-F-060 (Complaint management) to TC-13 and HMS-F-050 (Dashboards, reports and exports) to TC-15. The STP cover labels that copy “Sample”; confirm the TC-13 mapping against the approved System Test Plan before final submission.

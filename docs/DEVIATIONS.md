@@ -34,4 +34,4 @@ Add one line per deviation (what changed, why, which document). These are explai
 - Issue #30 (e-mail notifications, FR-9.1/9.2) was moved into Sprint 1.
 - PRs #45 and #47 were merged by their author before the "Protect main" ruleset was enabled; both were reviewed by the repository owner after merge.
 - The Sprint 1 video was recorded on 25 Oct 2026 (sprint ended 23 Oct). The Sprint 2 video was recorded on 3 Nov 2026 (sprint ended 30 Oct).
-- The Sprint 2 demo did not show a Warden updating complaint status because the Update link returned 404. In Sprint 3, the status page was fixed to render on GET and accept status changes via POST. The regression test test_warden_can_move_complaint_to_in_progress_through_page verifies the Warden can move a complaint to In Progress.
+- The Sprint 2 demo did not show a Warden updating complaint status because the Update link returned 404. Issue #81 addresses the FR-6.3 bug; its open PR includes the regression test `test_warden_can_move_complaint_to_in_progress_through_page`, which verifies that a Warden can move a complaint to In Progress through the page.
