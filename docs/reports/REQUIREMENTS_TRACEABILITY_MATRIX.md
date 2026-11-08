@@ -52,8 +52,8 @@ The RTM is maintained to ensure that requirements are covered by testing and tha
 
 | Metric | Result |
 |---|---|
-| Automated Django Tests | 371 |
-| Passed | 371 |
+| Automated Django Tests | 373 |
+| Passed | 373 |
 | Failed | 0 |
 | Errors | 0 |
 | Execution Duration | 7.281 seconds |
@@ -71,7 +71,7 @@ The RTM is maintained to ensure that requirements are covered by testing and tha
 
 ## 7. Conclusion
 
-The RTM establishes an initial mapping between the SRS requirements and available test case references. The automated Django test suite has passed all 371 tests. However, the RTM remains in progress until requirement-specific test results are reviewed and the pending non-functional requirements are verified.
+The RTM establishes an initial mapping between the SRS requirements and available test case references. The automated Django test suite has passed all 373 tests. However, the RTM remains in progress until requirement-specific test results are reviewed and the pending non-functional requirements are verified.
 
 ## 8. Security Audit Finding Traceability
 
