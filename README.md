@@ -4,7 +4,7 @@ SE Mini-Project, Group 3, PES University (Dept. of CSE).
 Raina Kareem (PES1UG24CS361), Prema P Kotur (PES1UG24CS343), Praakruthi PS (PES1UG24CS324), Ojas Taori (PES1UG24CS308).
 
 A Django web application to manage hostel room allocation and student details.
-Requirements are in [`docs/SRS_Hostel_Management_System.pdf`](docs/SRS_Hostel_Management_System.pdf);
+Requirements are in [`SRS_Hostel_Management_System.pdf`](SRS_Hostel_Management_System.pdf);
 requirement IDs (FR-x.y, SEC-REQ-n, ...) are referenced in the code comments.
 
 ## Run it on your laptop
@@ -62,7 +62,7 @@ docs/                SRS and other project documents
 ```
 
 Each app has `models.py`, `views.py`, `urls.py`, `admin.py` and a `tests/` folder.
-Screens not built yet show a "coming soon" page that names the FRs and planned sprint.
+
 
 ### Rules already in place
 
@@ -122,6 +122,10 @@ timings on the server:
 $env:HMS_SERVER_TIMING = "1"
 ```
 
+Do not use Django's development server with the default SQLite database for performance acceptance
+tests. Use an isolated, production-like application server and database; the local SQLite default
+and per-request session writes can become bottlenecks under concurrent load.
+
 From a separate load-generator machine, run the 200-user interactive-page test:
 
 ```powershell
@@ -164,3 +168,14 @@ locust -f perf/locustfile.py --host https://<test-host> --users 1 --spawn-rate 1
 
 This mode fails if the individual allocation exceeds 1 second at either the client or Django
 measurement boundary.
+
+## Documents and videos
+
+- [Software Requirements Specification](SRS_Hostel_Management_System.pdf)
+- [Software Architecture and Design](SAD_Architecture_and_Design.pdf)
+- [Software Test Plan](STP_Hostel_Management_System.pdf)
+- [Deviations from the documents](docs/DEVIATIONS.md)
+- [Security audit](docs/SECURITY_AUDIT.md)
+- [Operations: backups and scheduled jobs](docs/OPERATIONS.md)
+- [Sprint 1 demo video](docs/videos/Sprint1_Demo.mp4)
+- [Sprint 2 demo video](docs/videos/Sprint2_Demo.mp4)

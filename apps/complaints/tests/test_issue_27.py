@@ -2,6 +2,7 @@ from datetime import timedelta
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
@@ -244,3 +245,36 @@ class ComplaintStateServiceTests(TestCase):
             kwargs["created_at__lt"],
             now - timedelta(hours=72),
         )
+
+    def test_warden_can_move_complaint_to_in_progress_through_page(self):
+        complaint = self._complaint(ComplaintStatus.OPEN)
+        warden = User.objects.create_user(
+            email="complaint-warden@example.com",
+            password="test-password",
+            role=Role.WARDEN,
+        )
+        complaint.room.hostel.wardens.add(warden)
+        self.client.force_login(warden)
+
+        index_response = self.client.get(reverse("complaints:index"))
+        self.assertEqual(index_response.status_code, 200)
+        update_url = reverse(
+            "complaints:change_status",
+            args=[complaint.complaint_no],
+        )
+        self.assertContains(index_response, update_url)
+
+        form_response = self.client.get(update_url)
+        self.assertEqual(form_response.status_code, 200)
+        self.assertContains(form_response, "Update complaint")
+        self.assertContains(form_response, "In Progress")
+
+        response = self.client.post(
+            update_url,
+            {"status": ComplaintStatus.IN_PROGRESS, "remark": "Technician assigned."},
+        )
+
+        self.assertRedirects(response, reverse("complaints:index"))
+        complaint.refresh_from_db()
+        self.assertEqual(complaint.status, ComplaintStatus.IN_PROGRESS)
+        self.assertEqual(complaint.remark, "Technician assigned.")

@@ -1,6 +1,7 @@
 """Tests for FR-1.3, FR-1.5, FR-1.7. Test case IDs follow the Test Plan (TC-02, TC-03)."""
+import re
 from datetime import timedelta
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 from apps.accounts.models import Role, User
@@ -18,6 +19,37 @@ class LoginTests(TestCase):
         resp = self.client.post(self.url, {"email": "stu@hms.local", "password": PASSWORD})
         self.assertRedirects(resp, reverse("core:home"), fetch_redirect_response=False)
         self.assertTrue(AuditLog.objects.filter(action="LOGIN_SUCCESS").exists())
+
+    def test_login_form_csrf_cookie_supports_valid_login(self):
+        client = Client(enforce_csrf_checks=True)
+        login_page = client.get(self.url)
+
+        self.assertEqual(login_page.status_code, 200)
+        self.assertIn("csrftoken", login_page.cookies)
+        csrf_input = re.search(
+            rb'name="csrfmiddlewaretoken" value="([^"]+)"',
+            login_page.content,
+        )
+        self.assertIsNotNone(csrf_input)
+
+        rejected = client.post(
+            self.url,
+            {"email": "stu@hms.local", "password": PASSWORD},
+        )
+        self.assertEqual(rejected.status_code, 403)
+
+        response = client.post(
+            self.url,
+            {
+                "email": "stu@hms.local",
+                "password": PASSWORD,
+                "csrfmiddlewaretoken": csrf_input.group(1).decode(),
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.redirect_chain)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
 
     def test_tc02_same_error_for_unknown_email_and_wrong_password(self):
         r1 = self.client.post(self.url, {"email": "nobody@hms.local", "password": PASSWORD})
